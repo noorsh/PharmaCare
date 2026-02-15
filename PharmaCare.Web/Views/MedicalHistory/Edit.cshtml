@@ -1,0 +1,88 @@
+﻿@model PharmaCare.Data.Models.MedicalHistory
+@{
+    ViewData["Title"] = "Edit Medical Condition";
+}
+
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="fw-bold py-3 mb-4">
+        <span class="text-muted fw-light">Profile / Medical History /</span> Edit Medical Condition
+    </h4>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pencil"></i> Edit Medical Condition</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="MedicalHistoryId" />
+                        <input type="hidden" asp-for="PatientId" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="ConditionName" class="form-label">
+                                Condition Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ConditionName" class="form-control" 
+                                   list="commonConditions" />
+                            <datalist id="commonConditions">
+                                <option value="Type 2 Diabetes" />
+                                <option value="Type 1 Diabetes" />
+                                <option value="Hypertension (High Blood Pressure)" />
+                                <option value="Asthma" />
+                                <option value="Chronic Obstructive Pulmonary Disease (COPD)" />
+                                <option value="Heart Disease" />
+                                <option value="Hypothyroidism" />
+                                <option value="Hyperthyroidism" />
+                                <option value="Arthritis" />
+                                <option value="Depression" />
+                                <option value="Anxiety Disorder" />
+                                <option value="Migraine" />
+                            </datalist>
+                            <span asp-validation-for="ConditionName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DiagnosedDate" class="form-label">Diagnosed Date</label>
+                            <input asp-for="DiagnosedDate" class="form-control" type="date" />
+                            <span asp-validation-for="DiagnosedDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">Additional Notes</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    This is an ongoing/active condition
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Uncheck if this condition has been resolved</small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-controller="Patient" asp-action="Profile" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Condition
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

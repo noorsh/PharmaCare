@@ -1,0 +1,125 @@
+﻿@model PharmaCare.Data.Models.MedicalHistory
+@{
+    ViewData["Title"] = "Add Medical Condition";
+}
+
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="fw-bold py-3 mb-4">
+        <span class="text-muted fw-light">Profile / Medical History /</span> Add Medical Condition
+    </h4>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clipboard2-pulse"></i> Add Medical Condition</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Important:</strong> Please list any chronic conditions, past diagnoses, or ongoing health issues. This helps us provide safer recommendations.
+                    </div>
+
+                    <form asp-action="Create" method="post">
+                        <input type="hidden" asp-for="PatientId" />
+                        <input type="hidden" asp-for="IsActive" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="ConditionName" class="form-label">
+                                Condition Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ConditionName" class="form-control" 
+                                   placeholder="e.g., Type 2 Diabetes, Hypertension, Asthma" 
+                                   list="commonConditions" />
+                            <datalist id="commonConditions">
+                                <option value="Type 2 Diabetes" />
+                                <option value="Type 1 Diabetes" />
+                                <option value="Hypertension (High Blood Pressure)" />
+                                <option value="Asthma" />
+                                <option value="Chronic Obstructive Pulmonary Disease (COPD)" />
+                                <option value="Heart Disease" />
+                                <option value="Hypothyroidism" />
+                                <option value="Hyperthyroidism" />
+                                <option value="Arthritis" />
+                                <option value="Depression" />
+                                <option value="Anxiety Disorder" />
+                                <option value="Migraine" />
+                                <option value="Gastroesophageal Reflux Disease (GERD)" />
+                                <option value="Chronic Kidney Disease" />
+                                <option value="Liver Disease" />
+                            </datalist>
+                            <span asp-validation-for="ConditionName" class="text-danger"></span>
+                            <small class="form-text text-muted">Start typing to see common conditions</small>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="DiagnosedDate" class="form-label">Diagnosed Date</label>
+                            <input asp-for="DiagnosedDate" class="form-control" type="date" />
+                            <span asp-validation-for="DiagnosedDate" class="text-danger"></span>
+                            <small class="form-text text-muted">When were you diagnosed with this condition?</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">Additional Notes</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" 
+                                      placeholder="Any additional information about this condition (severity, complications, treatment status, etc.)"></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" checked />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    This is an ongoing/active condition
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Uncheck if this condition has been resolved</small>
+                        </div>
+
+                        <div class="alert alert-warning" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle"></i> Examples of what to include:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Chronic conditions:</strong> Diabetes, high blood pressure, asthma</li>
+                                <li><strong>Heart conditions:</strong> Arrhythmia, heart disease, previous heart attack</li>
+                                <li><strong>Mental health:</strong> Depression, anxiety, ADHD</li>
+                                <li><strong>Autoimmune:</strong> Lupus, rheumatoid arthritis, multiple sclerosis</li>
+                                <li><strong>Other:</strong> Cancer, thyroid disorders, seizure disorders</li>
+                            </ul>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-controller="Patient" asp-action="Profile" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Add Condition
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-question-circle"></i> Why is this important?</h6>
+                    <p class="card-text small text-muted mb-0">
+                        Your medical history helps us:
+                    </p>
+                    <ul class="small text-muted mb-0">
+                        <li>Avoid medications that could worsen existing conditions</li>
+                        <li>Check for drug-disease interactions</li>
+                        <li>Provide more accurate and personalized recommendations</li>
+                        <li>Alert pharmacists to important health considerations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

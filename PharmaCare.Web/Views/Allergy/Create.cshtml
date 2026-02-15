@@ -1,0 +1,242 @@
+﻿@model PharmaCare.Data.Models.Allergy
+@{
+    ViewData["Title"] = Model.AllergyId == 0 ? "Add Allergy" : "Edit Allergy";
+    Layout = "_Layout";
+    var isEdit = Model.AllergyId != 0;
+}
+
+<!-- Main Card Container -->
+<div class="max-w-[800px] mx-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+        <!-- Safety Banner -->
+        <div class="bg-red-600 dark:bg-red-700 py-3 px-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-white">warning</span>
+            <p class="text-white text-sm font-bold tracking-wide">
+                CRITICAL SAFETY NOTICE: Ensure all information is accurate as this record will be used for medication cross-referencing.
+            </p>
+        </div>
+
+        <div class="p-8">
+            <!-- Header -->
+            <header class="mb-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
+                            @(isEdit ? "Edit Allergy" : "Add Allergy")
+                        </h1>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2">
+                            @(isEdit ? "Update your allergy information" : "Document a new sensitivity or allergic reaction for the clinical record.")
+                        </p>
+                    </div>
+                    <a asp-action="Allergies" asp-controller="Patient" class="text-sm text-primary hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">arrow_back</span>
+                        Back to Allergies
+                    </a>
+                </div>
+            </header>
+
+            <!-- Validation Summary -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-red-500">error</span>
+                        <div asp-validation-summary="All" class="text-sm text-red-700 dark:text-red-300"></div>
+                    </div>
+                </div>
+            }
+
+            <form asp-action="@(isEdit ? "Edit" : "Create")" asp-controller="Allergy" method="post" id="allergyForm" class="space-y-12">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="AllergyId" />
+                <input type="hidden" asp-for="PatientId" />
+
+                <!-- Section 1: Allergen Info -->
+                <section>
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">1</span>
+                        <h2 class="text-xl font-semibold">Allergen Information</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label asp-for="AllergenName" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Allergen Name *</label>
+                            <input asp-for="AllergenName" 
+                                   class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary" 
+                                   placeholder="e.g. Penicillin, Peanuts, Latex" 
+                                   type="text" 
+                                   maxlength="100"
+                                   required />
+                            <span asp-validation-for="AllergenName" class="text-xs text-red-500"></span>
+                        </div>
+                        <div class="space-y-2">
+                            <label asp-for="AllergyType" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Allergen Type *</label>
+                            <select asp-for="AllergyType" 
+                                    class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary"
+                                    required>
+                                <option value="">Select type...</option>
+                                <option value="Medication">Medication (Drug)</option>
+                                <option value="Food">Food</option>
+                                <option value="Environmental">Environmental</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <span asp-validation-for="AllergyType" class="text-xs text-red-500"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Severity Level -->
+                <section>
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</span>
+                        <h2 class="text-xl font-semibold">Severity Level *</h2>
+                    </div>
+                    
+                    <input type="hidden" asp-for="Severity" id="severityInput" />
+                    <span asp-validation-for="Severity" class="text-xs text-red-500 block mb-2"></span>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Life-threatening -->
+                        <div class="severity-card border-2 rounded-xl p-4 cursor-pointer flex flex-col items-center text-center transition-all hover:border-red-600 @(Model.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.LifeThreatening ? "severity-selected border-red-600 bg-red-50/50 dark:bg-red-950/10" : "border-slate-200 dark:border-slate-800")"
+                             onclick="selectSeverity(this, 'LifeThreatening')"
+                             data-severity="LifeThreatening">
+                            <span class="material-symbols-outlined text-red-600 mb-2 text-3xl">emergency</span>
+                            <h3 class="font-bold text-red-600">Life-threatening</h3>
+                            <p class="text-xs mt-1 text-slate-600 dark:text-slate-400">Anaphylaxis, airway closure, urgent care needed.</p>
+                        </div>
+
+                        <!-- Severe -->
+                        <div class="severity-card border-2 rounded-xl p-4 cursor-pointer flex flex-col items-center text-center transition-all hover:border-orange-500 @(Model.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Severe ? "severity-selected border-orange-500 bg-orange-50/50 dark:bg-orange-950/10" : "border-slate-200 dark:border-slate-800")"
+                             onclick="selectSeverity(this, 'Severe')"
+                             data-severity="Severe">
+                            <span class="material-symbols-outlined text-orange-500 mb-2 text-3xl">warning</span>
+                            <h3 class="font-bold text-orange-500">Severe</h3>
+                            <p class="text-xs mt-1 text-slate-600 dark:text-slate-400">Intense reaction, significant distress.</p>
+                        </div>
+
+                        <!-- Moderate -->
+                        <div class="severity-card border-2 rounded-xl p-4 cursor-pointer flex flex-col items-center text-center transition-all hover:border-amber-500 @(Model.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Moderate ? "severity-selected border-amber-500 bg-amber-50/50 dark:bg-amber-950/10" : "border-slate-200 dark:border-slate-800")"
+                             onclick="selectSeverity(this, 'Moderate')"
+                             data-severity="Moderate">
+                            <span class="material-symbols-outlined text-amber-500 mb-2 text-3xl">error</span>
+                            <h3 class="font-bold text-amber-500">Moderate</h3>
+                            <p class="text-xs mt-1 text-slate-600 dark:text-slate-400">Noticeable symptoms, moderate discomfort.</p>
+                        </div>
+
+                        <!-- Mild -->
+                        <div class="severity-card border-2 rounded-xl p-4 cursor-pointer flex flex-col items-center text-center transition-all hover:border-green-600 @(Model.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Mild ? "severity-selected border-green-600 bg-green-50/50 dark:bg-green-950/10" : "border-slate-200 dark:border-slate-800")"
+                             onclick="selectSeverity(this, 'Mild')"
+                             data-severity="Mild">
+                            <span class="material-symbols-outlined text-green-600 mb-2 text-3xl">info</span>
+                            <h3 class="font-bold text-green-600">Mild</h3>
+                            <p class="text-xs mt-1 text-slate-600 dark:text-slate-400">Light rash, minor itching, manageable.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Reaction Details -->
+                <section>
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</span>
+                        <h2 class="text-xl font-semibold">Reaction Details</h2>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label asp-for="Reaction" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Reported Symptoms *</label>
+                            <textarea asp-for="Reaction" 
+                                      class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary" 
+                                      placeholder="Describe what happens during a reaction (e.g., hives, difficulty breathing, swelling)..." 
+                                      rows="3"
+                                      maxlength="500"
+                                      required></textarea>
+                            <span asp-validation-for="Reaction" class="text-xs text-red-500"></span>
+                            <p class="text-xs text-slate-500">Be specific - this helps medical professionals identify the allergy</p>
+                        </div>
+
+     
+
+                        <div class="space-y-2">
+                            <label asp-for="Reaction" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Clinical Notes (Optional)</label>
+                            <textarea asp-for="Reaction" 
+                                      class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary" 
+                                      placeholder="Additional information (e.g., carries EpiPen, avoid cross-contamination)..." 
+                                      rows="3"
+                                      maxlength="500"></textarea>
+                            <span asp-validation-for="Reaction" class="text-xs text-red-500"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Action Footer -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 -mx-8 -mb-8 p-6 flex items-center justify-end gap-4">
+                    <a asp-action="Allergies" asp-controller="Patient" 
+                       class="px-6 py-2.5 rounded-lg font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-primary text-white px-8 py-2.5 rounded-lg font-semibold hover:opacity-90 shadow-md transition-all">
+                        <span class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">@(isEdit ? "save" : "add_circle")</span>
+                            @(isEdit ? "Update Allergy" : "Save Allergy")
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="mt-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+        <p>This record will be reviewed by your primary care physician. For emergencies, please call emergency services immediately.</p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Severity selection
+        function selectSeverity(card, severity) {
+            // Remove selected class from all cards
+            document.querySelectorAll('.severity-card').forEach(c => {
+                c.classList.remove('severity-selected', 
+                    'border-red-600', 'bg-red-50/50', 'dark:bg-red-950/10',
+                    'border-orange-500', 'bg-orange-50/50', 'dark:bg-orange-950/10',
+                    'border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/10',
+                    'border-green-600', 'bg-green-50/50', 'dark:bg-green-950/10');
+                c.classList.add('border-slate-200', 'dark:border-slate-800');
+            });
+
+            // Add selected class to clicked card
+            card.classList.add('severity-selected');
+            card.classList.remove('border-slate-200', 'dark:border-slate-800');
+            
+            // Apply color based on severity
+            const colorClasses = {
+                'LifeThreatening': ['border-red-600', 'bg-red-50/50', 'dark:bg-red-950/10'],
+                'Severe': ['border-orange-500', 'bg-orange-50/50', 'dark:bg-orange-950/10'],
+                'Moderate': ['border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/10'],
+                'Mild': ['border-green-600', 'bg-green-50/50', 'dark:bg-green-950/10']
+            };
+            
+            card.classList.add(...colorClasses[severity]);
+
+            // Update hidden input
+            document.getElementById('severityInput').value = severity;
+        }
+
+        // Form validation on submit
+        document.getElementById('allergyForm').addEventListener('submit', function(e) {
+            const severity = document.getElementById('severityInput').value;
+            if (!severity) {
+                e.preventDefault();
+                alert('Please select a severity level');
+                return false;
+            }
+        });
+    </script>
+}
+
+<style>
+    .severity-card.severity-selected {
+        box-shadow: 0 0 0 2px currentColor;
+    }
+</style>

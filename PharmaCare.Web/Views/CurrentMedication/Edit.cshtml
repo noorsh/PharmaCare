@@ -1,0 +1,97 @@
+﻿@model PharmaCare.Data.Models.CurrentMedication
+@{
+    ViewData["Title"] = "Edit Medication";
+}
+
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="fw-bold py-3 mb-4">
+        <span class="text-muted fw-light">Profile / Medications /</span> Edit Medication
+    </h4>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pencil"></i> Edit Medication Information</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="CurrentMedicationId" />
+                        <input type="hidden" asp-for="PatientId" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="MedicationName" class="form-label">
+                                Medication Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="MedicationName" class="form-control" />
+                            <span asp-validation-for="MedicationName" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Dosage" class="form-label">Dosage</label>
+                                <input asp-for="Dosage" class="form-control" />
+                                <span asp-validation-for="Dosage" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Frequency" class="form-label">Frequency</label>
+                                <select asp-for="Frequency" class="form-select">
+                                    <option value="">Select Frequency</option>
+                                    <option value="Once daily">Once daily</option>
+                                    <option value="Twice daily">Twice daily</option>
+                                    <option value="Three times daily">Three times daily</option>
+                                    <option value="Four times daily">Four times daily</option>
+                                    <option value="Every other day">Every other day</option>
+                                    <option value="Once weekly">Once weekly</option>
+                                    <option value="As needed">As needed (PRN)</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <span asp-validation-for="Frequency" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="StartDate" class="form-label">Start Date</label>
+                            <input asp-for="StartDate" class="form-control" type="date" />
+                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Purpose" class="form-label">Purpose/Reason</label>
+                            <textarea asp-for="Purpose" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="Purpose" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    Currently Taking This Medication
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Uncheck this if you've stopped taking this medication</small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-controller="Patient" asp-action="Profile" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Medication
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

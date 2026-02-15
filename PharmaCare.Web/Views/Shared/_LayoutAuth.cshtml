@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PharmaCare</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1392ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                        "warning": "#f59e0b",
+                        "success": "#10b981",
+                        "error": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { 
+                        "DEFAULT": "0.25rem", 
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem", 
+                        "full": "9999px" 
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#111518] dark:text-white font-display">
+    <!-- Top Navigation Bar -->
+    <header class="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#1a2632] border-b border-[#e5e7eb] dark:border-[#2d3a4b] z-50 flex items-center justify-between px-6">
+        <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3">
+            <div class="bg-primary p-1.5 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-2xl">health_metrics</span>
+            </div>
+            <h1 class="text-xl font-extrabold tracking-tight">PharmaCare</h1>
+        </a>
+        <div class="flex items-center gap-4">
+            <button class="p-2 text-[#617789] dark:text-[#94a3b8] hover:bg-[#f0f2f4] dark:hover:bg-[#243341] rounded-full relative">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <div class="h-8 w-[1px] bg-[#e5e7eb] dark:bg-[#2d3a4b] mx-2"></div>
+            
+            <!-- User Dropdown -->
+            <div class="relative group">
+                <div class="flex items-center gap-3 cursor-pointer">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-semibold leading-none">@User.Identity.Name</p>
+                        <p class="text-xs text-[#617789] dark:text-[#94a3b8]">
+                            @if (User.IsInRole("Patient"))
+                            {
+                                <text>Patient</text>
+                            }
+                            else if (User.IsInRole("Pharmacist"))
+                            {
+                                <text>Pharmacist</text>
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                <text>Administrator</text>
+                            }
+                        </p>
+                    </div>
+                    <div class="size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
+                        @(User.Identity.Name?.Substring(0, 1).ToUpper() ?? "U")
+                    </div>
+                    <span class="material-symbols-outlined text-sm text-[#617789]">expand_more</span>
+                </div>
+                
+                <!-- Dropdown Menu -->
+                <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg shadow-lg overflow-hidden">
+                    @if (User.IsInRole("Patient"))
+                    {
+                        <a asp-controller="Patient" asp-action="Profile" class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#f0f2f4] dark:hover:bg-[#243341] transition-colors">
+                            <span class="material-symbols-outlined text-sm">person</span>
+                            My Profile
+                        </a>
+                        <a asp-controller="Patient" asp-action="Edit" class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#f0f2f4] dark:hover:bg-[#243341] transition-colors">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            Edit Profile
+                        </a>
+                    }
+                    <div class="border-t border-[#e5e7eb] dark:border-[#2d3a4b]"></div>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                            <span class="material-symbols-outlined text-sm">logout</span>
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex pt-16">
+        <!-- Sidebar Navigation -->
+        <aside class="fixed left-0 w-64 h-[calc(100vh-64px)] bg-[#f6f7f8] dark:bg-[#0f1720] border-r border-[#e5e7eb] dark:border-[#2d3a4b] overflow-y-auto hidden lg:block">
+            <nav class="p-4 space-y-1">
+                @if (User.IsInRole("Patient"))
+                {
+                    <a asp-controller="Patient" asp-action="Dashboard" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <a asp-controller="Patient" asp-action="Profile" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">person</span>
+                        <span>My Profile</span>
+                    </a>
+                    
+                    <a asp-controller="Patient" asp-action="MedicalHistory" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "MedicalHistory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">history</span>
+                        <span>Medical History</span>
+                    </a>
+                    
+                    <a asp-controller="Patient" asp-action="Allergies" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Allergies" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">warning</span>
+                        <span>Allergies</span>
+                    </a>
+                    
+                    <a asp-controller="Patient" asp-action="CurrentMedications" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "CurrentMedications" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">pill</span>
+                        <span>Current Medications</span>
+                    </a>
+                    
+                    <a asp-controller="Consultation" asp-action="Index" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">chat</span>
+                        <span>Consultations</span>
+                    </a>
+                }
+                else if (User.IsInRole("Pharmacist"))
+                {
+                    <a asp-controller="Pharmacist" asp-action="Dashboard" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a asp-controller="Consultation" asp-action="Pending" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Pending" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">pending_actions</span>
+                        <span>Pending Consultations</span>
+                    </a>
+                    <a asp-controller="Patient" asp-action="List" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "List" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">group</span>
+                        <span>Patients</span>
+                    </a>
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Admin" asp-action="Dashboard" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a asp-controller="Admin" asp-action="Inventory" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Inventory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">inventory</span>
+                        <span>Inventory</span>
+                    </a>
+                    <a asp-controller="Admin" asp-action="Users" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                        <span class="material-symbols-outlined">people</span>
+                        <span>Users</span>
+                    </a>
+                }
+            </nav>
+            
+            <div class="mt-8 px-4 pb-4">
+                <p class="px-3 text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest mb-2">Support</p>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632] transition-colors">
+                    <span class="material-symbols-outlined">help</span>
+                    <span>Help Center</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632] transition-colors">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span>Settings</span>
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="mt-4">
+                    <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                        <span class="material-symbols-outlined">logout</span>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 lg:ml-64 bg-[#fafafa] dark:bg-[#0b1218] min-h-[calc(100vh-64px)] p-6 lg:p-8">
+            @if (TempData["Success"] != null)
+            {
+                <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>@TempData["Success"]</span>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined">error</span>
+                    <span>@TempData["Error"]</span>
+                </div>
+            }
+            
+            @RenderBody()
+        </main>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

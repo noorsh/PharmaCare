@@ -1,0 +1,522 @@
+﻿@model IEnumerable<PharmaCare.Data.Models.Allergy>
+@{
+    ViewData["Title"] = "My Allergies";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Critical Safety Banner -->
+<div class="mb-6">
+    <div class="flex flex-col lg:flex-row items-start justify-between gap-4 rounded-lg border-2 border-red-200 bg-red-50 dark:bg-red-900/20 p-5">
+        <div class="flex gap-4 items-start">
+            <div class="text-red-600 dark:text-red-400 mt-1">
+                <span class="material-symbols-outlined text-3xl font-bold">warning</span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <p class="text-red-800 dark:text-red-200 text-base font-bold leading-tight">Critical Safety Warning</p>
+                <p class="text-red-700 dark:text-red-300 text-sm font-medium leading-normal">
+                    Your allergy profile directly influences AI-generated medication safety checks and prescriptions. Ensure this list is accurate and up-to-date.
+                </p>
+            </div>
+        </div>
+        <a href="#" class="flex min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap">
+            Review Policy
+        </a>
+    </div>
+</div>
+
+<!-- Page Header & Actions -->
+<div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+    <div class="flex flex-col gap-2">
+        <h1 class="text-[#111518] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">My Allergies &amp; Sensitivities</h1>
+        <p class="text-[#617989] dark:text-gray-400 text-base font-normal">Categorized clinical summary for automated medication safety screening.</p>
+    </div>
+    <button onclick="openAddModal()" class="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-all">
+        <span class="material-symbols-outlined">add_circle</span>
+        Add New Allergy
+    </button>
+</div>
+
+@{
+    var allergiesList = Model?.ToList() ?? new List<PharmaCare.Data.Models.Allergy>();
+    var totalCount = allergiesList.Count;
+    var lifeThreatening = allergiesList.Count(a => a.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.LifeThreatening);
+    var severe = allergiesList.Count(a => a.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Severe);
+    var moderate = allergiesList.Count(a => a.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Moderate);
+    var mild = allergiesList.Count(a => a.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Mild);
+}
+
+<!-- Statistics Bar -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <div class="flex flex-col gap-1 rounded-xl p-5 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a252e] shadow-sm">
+        <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Total</p>
+        <p class="text-[#111518] dark:text-white text-3xl font-black">@totalCount.ToString("D2")</p>
+    </div>
+    <div class="flex flex-col gap-1 rounded-xl p-5 border-l-4 border-l-red-600 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a252e] shadow-sm">
+        <p class="text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider">Life-threatening</p>
+        <p class="text-[#111518] dark:text-white text-3xl font-black">@lifeThreatening.ToString("D2")</p>
+    </div>
+    <div class="flex flex-col gap-1 rounded-xl p-5 border-l-4 border-l-orange-500 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a252e] shadow-sm">
+        <p class="text-orange-500 dark:text-orange-400 text-xs font-bold uppercase tracking-wider">Severe</p>
+        <p class="text-[#111518] dark:text-white text-3xl font-black">@severe.ToString("D2")</p>
+    </div>
+    <div class="flex flex-col gap-1 rounded-xl p-5 border-l-4 border-l-yellow-400 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a252e] shadow-sm">
+        <p class="text-yellow-600 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider">Moderate</p>
+        <p class="text-[#111518] dark:text-white text-3xl font-black">@moderate.ToString("D2")</p>
+    </div>
+    <div class="flex flex-col gap-1 rounded-xl p-5 border-l-4 border-l-green-500 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a252e] shadow-sm">
+        <p class="text-green-600 dark:text-green-400 text-xs font-bold uppercase tracking-wider">Mild</p>
+        <p class="text-[#111518] dark:text-white text-3xl font-black">@mild.ToString("D2")</p>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="border-b border-gray-200 dark:border-gray-800 mb-6">
+    <div class="flex gap-8">
+        <a href="#" class="tab-link border-b-2 border-primary text-primary pb-3 text-sm font-bold" data-filter="All">All Types</a>
+        <a href="#" class="tab-link text-gray-500 dark:text-gray-400 pb-3 text-sm font-bold hover:text-primary transition-colors" data-filter="Medication">Drug</a>
+        <a href="#" class="tab-link text-gray-500 dark:text-gray-400 pb-3 text-sm font-bold hover:text-primary transition-colors" data-filter="Food">Food</a>
+        <a href="#" class="tab-link text-gray-500 dark:text-gray-400 pb-3 text-sm font-bold hover:text-primary transition-colors" data-filter="Environmental">Environmental</a>
+    </div>
+</div>
+
+@if (!allergiesList.Any())
+{
+    <!-- Empty State -->
+    <div id="noAllergiesMessage" class="flex flex-col items-center justify-center py-16 text-center">
+        <span class="material-symbols-outlined text-gray-300 dark:text-gray-700 text-8xl mb-4">health_and_safety</span>
+        <h3 class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">No allergies recorded</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+            Tell us about your allergies to help prevent dangerous reactions and ensure safe medication recommendations.
+        </p>
+        <button onclick="openAddModal()" class="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-all">
+            <span class="material-symbols-outlined">add_circle</span>
+            Add Your First Allergy
+        </button>
+    </div>
+}
+else
+{
+    <!-- Allergy Cards List -->
+    <div id="allergyCardsContainer" class="grid grid-cols-1 gap-4">
+        @foreach (var allergy in allergiesList.OrderByDescending(a => a.Severity))
+        {
+            var severityConfig = GetSeverityConfig(allergy.Severity);
+
+            <div class="allergy-card flex items-start justify-between p-6 rounded-lg border @severityConfig.BorderClass @severityConfig.BgClass border-l-[6px] @severityConfig.LeftBorderClass shadow-sm hover:shadow-md transition-shadow"
+                 data-allergy-type="@allergy.AllergyType">
+                <div class="flex gap-5 flex-1">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full @severityConfig.IconBgClass @severityConfig.IconColorClass flex-shrink-0">
+                        <span class="material-symbols-outlined text-3xl @(allergy.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.LifeThreatening ? "font-bold" : "")">
+                            @severityConfig.Icon
+                        </span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-1 flex-wrap">
+                            <h3 class="text-[#111518] dark:text-white text-xl font-extrabold leading-tight">@allergy.AllergenName</h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest @severityConfig.BadgeClass">
+                                @allergy.Severity.ToString().ToUpper()
+                            </span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+                            Category: <span class="font-bold">@allergy.AllergyType</span>
+                        </p>
+                        @if (!string.IsNullOrEmpty(allergy.Reaction))
+                        {
+                            <p class="@(allergy.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.Severe || allergy.Severity == PharmaCare.Data.Models.Enums.AllergySeverity.LifeThreatening ? "text-red-900 dark:text-red-200 bg-red-100/50 dark:bg-red-900/30 p-3 rounded-lg border border-red-200/50" : "text-gray-600 dark:text-gray-400") text-sm italic">
+                                "@allergy.Reaction"
+                            </p>
+                        }
+                        
+                    </div>
+                </div>
+                <div class="flex gap-2 flex-shrink-0 ml-4">
+                    <button onclick='openEditModal(@Json.Serialize(new { 
+                        allergyId = allergy.AllergyId, 
+                        allergenName = allergy.AllergenName, 
+                        allergyType = allergy.AllergyType, 
+                        severity = allergy.Severity.ToString(), 
+                        reaction = allergy.Reaction
+                    }))' class="p-2 text-gray-400 hover:text-primary transition-colors" title="Edit">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button onclick="confirmDelete(@allergy.AllergyId, '@allergy.AllergenName', '@allergy.Severity')" class="p-2 text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Empty message for filtered tabs -->
+    <div id="noFilteredAllergies" class="hidden flex-col items-center justify-center py-16 text-center">
+        <span class="material-symbols-outlined text-gray-300 dark:text-gray-700 text-8xl mb-4">health_and_safety</span>
+        <h3 class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">No allergies in this category</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+            Select a different category or add a new allergy.
+        </p>
+        <button onclick="openAddModal()" class="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-all">
+            <span class="material-symbols-outlined">add_circle</span>
+            Add Allergy
+        </button>
+    </div>
+}
+
+<!-- Add/Edit Allergy Modal -->
+<div id="allergyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-xl max-w-2xl w-full shadow-2xl my-8">
+        <!-- Safety Banner -->
+        <div class="bg-red-600 dark:bg-red-700 py-3 px-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-white">warning</span>
+            <p class="text-white text-sm font-bold tracking-wide">
+                CRITICAL: Accurate allergy information prevents dangerous drug reactions
+            </p>
+        </div>
+
+        <div class="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4" id="modalTitle">Add Allergy</h2>
+
+            <form asp-controller="Allergy" asp-action="Create" method="post" id="allergyForm" class="space-y-6">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="AllergyId" id="allergyId" value="0" />
+                <input type="hidden" name="PatientId" value="@ViewBag.PatientId" />
+
+                <!-- Allergen Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+                        Allergen Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Allergen Name *</label>
+                            <input type="text" name="AllergenName" id="allergenName" required maxlength="100"
+                                   class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary"
+                                   placeholder="e.g. Penicillin, Peanuts" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Allergy Type *</label>
+                            <select name="AllergyType" id="allergyType" required
+                                    class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary">
+                                <option value="">Select type...</option>
+                                <option value="1">Medication (Drug)</option>
+                                <option value="2">Food</option>
+                                <option value="3">Environmental</option>
+                                <option value="4">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Severity Level -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+                        Severity Level *
+                        <span class="error-sevevrity" style=" color: red; font-size: 12px;"></span>
+                    </h3>
+                    <input type="hidden" name="Severity" id="severityInput" required />
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <!-- Life-threatening -->
+                        <div class="severity-card border-2 border-slate-200 dark:border-slate-800 rounded-lg p-3 cursor-pointer text-center transition-all hover:border-red-600"
+                             onclick="selectSeverity(this, 'LifeThreatening')" data-severity="LifeThreatening">
+                            <span class="material-symbols-outlined text-red-600 text-2xl">emergency</span>
+                            <h4 class="font-bold text-red-600 text-sm mt-1">Life-threatening</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Anaphylaxis</p>
+                        </div>
+                        <!-- Severe -->
+                        <div class="severity-card border-2 border-slate-200 dark:border-slate-800 rounded-lg p-3 cursor-pointer text-center transition-all hover:border-orange-500"
+                             onclick="selectSeverity(this, 'Severe')" data-severity="Severe">
+                            <span class="material-symbols-outlined text-orange-500 text-2xl">warning</span>
+                            <h4 class="font-bold text-orange-500 text-sm mt-1">Severe</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Serious</p>
+                        </div>
+                        <!-- Moderate -->
+                        <div class="severity-card border-2 border-slate-200 dark:border-slate-800 rounded-lg p-3 cursor-pointer text-center transition-all hover:border-amber-500"
+                             onclick="selectSeverity(this, 'Moderate')" data-severity="Moderate">
+                            <span class="material-symbols-outlined text-amber-500 text-2xl">error</span>
+                            <h4 class="font-bold text-amber-500 text-sm mt-1">Moderate</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Noticeable</p>
+                        </div>
+                        <!-- Mild -->
+                        <div class="severity-card border-2 border-slate-200 dark:border-slate-800 rounded-lg p-3 cursor-pointer text-center transition-all hover:border-green-600"
+                             onclick="selectSeverity(this, 'Mild')" data-severity="Mild">
+                            <span class="material-symbols-outlined text-green-600 text-2xl">info</span>
+                            <h4 class="font-bold text-green-600 text-sm mt-1">Mild</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Minor</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reaction Details -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+                        Reaction Details
+                    </h3>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Symptoms *</label>
+                        <textarea name="Reaction" id="reaction" required maxlength="500" rows="3"
+                                  class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary"
+                                  placeholder="Describe what happens (e.g., hives, difficulty breathing)"></textarea>
+                    </div>
+     
+       
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 justify-end pt-4 border-t">
+                    <button type="button" onclick="closeAllergyModal()"
+                            class="px-6 py-2.5 rounded-lg font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="bg-primary text-white px-8 py-2.5 rounded-lg font-semibold hover:opacity-90 shadow-md transition-all">
+                        <span id="submitButtonText">Save Allergy</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 flex-shrink-0">
+                <span class="material-symbols-outlined text-3xl">warning</span>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Allergy?</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Are you SURE you want to delete this allergy?
+                </p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white" id="deleteAllergyName"></p>
+                <p class="text-sm text-red-600 dark:text-red-400 font-medium" id="deleteAllergySeverity"></p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    This could affect medication safety recommendations.
+                </p>
+            </div>
+        </div>
+        <form id="deleteForm" method="post">
+            @Html.AntiForgeryToken()
+            <div class="flex gap-3 justify-end mt-6">
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-all">
+                    Yes, Delete
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        
+        // Tab filtering
+        document.querySelectorAll('.tab-link').forEach(tab => {
+            tab.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelectorAll('.tab-link').forEach(t => {
+                    t.classList.remove('border-primary', 'text-primary');
+                    t.classList.add('text-gray-500', 'dark:text-gray-400');
+                });
+                this.classList.remove('text-gray-500', 'dark:text-gray-400');
+                this.classList.add('border-primary', 'text-primary');
+
+                const filter = this.getAttribute('data-filter');
+                const cards = document.querySelectorAll('.allergy-card');
+                let visibleCount = 0;
+
+                cards.forEach(card => {
+                    if (filter === 'All' || card.getAttribute('data-allergy-type') === filter) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                const emptyMessage = document.getElementById('noFilteredAllergies');
+                if (emptyMessage) {
+                    if (visibleCount === 0) {
+                        emptyMessage.classList.remove('hidden');
+                        emptyMessage.classList.add('flex');
+                    } else {
+                        emptyMessage.classList.add('hidden');
+                        emptyMessage.classList.remove('flex');
+                    }
+                }
+            });
+        });
+
+        // Ensure severity is selected before submitting
+        document.getElementById('allergyForm').addEventListener('submit', function(e) {
+            const severityInput = document.getElementById('severityInput');
+            if (!severityInput.value) {
+                e.preventDefault(); // stop form submission
+
+                // Highlight severity cards
+                const cards = document.querySelectorAll('.severity-card');
+                cards.forEach(c => {
+                    c.classList.add('border-red-600'); // indicate error
+                  
+                });
+$('.error-sevevrity').text('Please select a severity level before submitting.')
+             
+                return false;
+            }
+});
+
+
+    
+        // Add Modal
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add Allergy';
+            document.getElementById('submitButtonText').textContent = 'Save Allergy';
+            document.getElementById('allergyForm').action = '@Url.Action("Create", "Allergy")';
+            document.getElementById('allergyForm').reset();
+            document.getElementById('allergyId').value = '0';
+            document.querySelectorAll('.severity-card').forEach(c => {
+                c.classList.remove('severity-selected', 'border-red-600', 'bg-red-50/50', 'border-orange-500', 'bg-orange-50/50', 'border-amber-500', 'bg-amber-50/50', 'border-green-600', 'bg-green-50/50');
+                c.classList.add('border-slate-200', 'dark:border-slate-800');
+            });
+            
+            document.getElementById('allergyModal').classList.remove('hidden');
+        }
+
+        // Edit Modal
+        function openEditModal(data) {
+            document.getElementById('modalTitle').textContent = 'Edit Allergy';
+            document.getElementById('submitButtonText').textContent = 'Update Allergy';
+            document.getElementById('allergyForm').action = '@Url.Action("Edit", "Allergy")/' + data.allergyId;
+
+            document.getElementById('allergyId').value = data.allergyId;
+            document.getElementById('allergenName').value = data.allergenName;
+            document.getElementById('allergyType').value = data.allergyType;
+            document.getElementById('reaction').value = data.reaction;
+       
+
+            // Select severity
+            const severityCard = document.querySelector(`[data-severity="${data.severity}"]`);
+            if (severityCard) {
+                selectSeverity(severityCard, data.severity);
+            }
+
+            document.getElementById('allergyModal').classList.remove('hidden');
+        }
+
+        function closeAllergyModal() {
+            document.getElementById('allergyModal').classList.add('hidden');
+            $('.error-sevevrity').text('')
+        }
+
+        // Delete confirmation
+        function confirmDelete(allergyId, allergyName, severity) {
+            document.getElementById('deleteAllergyName').textContent = 'Allergen: ' + allergyName;
+            document.getElementById('deleteAllergySeverity').textContent = 'Severity: ' + severity;
+            document.getElementById('deleteForm').action = '/Allergy/Delete/' + allergyId;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        function selectSeverity(card, severity) {
+            document.querySelectorAll('.severity-card').forEach(c => {
+                c.classList.remove('severity-selected', 'border-red-600', 'bg-red-50/50', 'dark:bg-red-950/10',
+                    'border-orange-500', 'bg-orange-50/50', 'dark:bg-orange-950/10',
+                    'border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/10',
+                    'border-green-600', 'bg-green-50/50', 'dark:bg-green-950/10');
+                c.classList.add('border-slate-200', 'dark:border-slate-800');
+                c.classList.remove('animate-shake'); // remove shake if applied
+            });
+            $('.error-sevevrity').text('');
+            card.classList.add('severity-selected');
+            card.classList.remove('border-slate-200', 'dark:border-slate-800');
+            
+
+            const colorClasses = {
+                'LifeThreatening': ['border-red-600', 'bg-red-50/50', 'dark:bg-red-950/10'],
+                'Severe': ['border-orange-500', 'bg-orange-50/50', 'dark:bg-orange-950/10'],
+                'Moderate': ['border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/10'],
+                'Mild': ['border-green-600', 'bg-green-50/50', 'dark:bg-green-950/10']
+            };
+
+            card.classList.add(...colorClasses[severity]);
+            document.getElementById('severityInput').value = severity;
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        // Close modals on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeAllergyModal();
+                closeDeleteModal();
+            }
+        });
+
+        // Close modals on background click
+        document.getElementById('allergyModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeAllergyModal();
+        });
+        document.getElementById('deleteModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeDeleteModal();
+        });
+    </script>
+}
+
+@functions {
+    private (string BorderClass, string BgClass, string LeftBorderClass, string IconBgClass, string IconColorClass, string BadgeClass, string Icon) GetSeverityConfig(PharmaCare.Data.Models.Enums.AllergySeverity severity)
+    {
+        return severity switch
+        {
+            PharmaCare.Data.Models.Enums.AllergySeverity.LifeThreatening => (
+                BorderClass: "border-red-200",
+                BgClass: "bg-red-50/50 dark:bg-red-950/10",
+                LeftBorderClass: "border-l-red-600",
+                IconBgClass: "bg-red-100 dark:bg-red-900/40",
+                IconColorClass: "text-red-600",
+                BadgeClass: "bg-red-600 text-white",
+                Icon: "bolt"
+            ),
+            PharmaCare.Data.Models.Enums.AllergySeverity.Severe => (
+                BorderClass: "border-gray-200 dark:border-gray-800",
+                BgClass: "bg-white dark:bg-[#1a252e]",
+                LeftBorderClass: "border-l-orange-500",
+                IconBgClass: "bg-orange-100 dark:bg-orange-900/20",
+                IconColorClass: "text-orange-500",
+                BadgeClass: "bg-orange-500 text-white",
+                Icon: "emergency_home"
+            ),
+            PharmaCare.Data.Models.Enums.AllergySeverity.Moderate => (
+                BorderClass: "border-gray-200 dark:border-gray-800",
+                BgClass: "bg-white dark:bg-[#1a252e]",
+                LeftBorderClass: "border-l-yellow-400",
+                IconBgClass: "bg-yellow-100 dark:bg-yellow-900/20",
+                IconColorClass: "text-yellow-600",
+                BadgeClass: "bg-yellow-400 text-gray-900",
+                Icon: "info"
+            ),
+            PharmaCare.Data.Models.Enums.AllergySeverity.Mild => (
+                BorderClass: "border-gray-200 dark:border-gray-800",
+                BgClass: "bg-white dark:bg-[#1a252e]",
+                LeftBorderClass: "border-l-green-500",
+                IconBgClass: "bg-green-100 dark:bg-green-900/20",
+                IconColorClass: "text-green-600",
+                BadgeClass: "bg-green-500 text-white",
+                Icon: "eco"
+            ),
+            _ => (
+                BorderClass: "border-gray-200 dark:border-gray-800",
+                BgClass: "bg-white dark:bg-[#1a252e]",
+                LeftBorderClass: "border-l-gray-500",
+                IconBgClass: "bg-gray-100 dark:bg-gray-900/20",
+                IconColorClass: "text-gray-600",
+                BadgeClass: "bg-gray-500 text-white",
+                Icon: "health_and_safety"
+            )
+        };
+    }
+}

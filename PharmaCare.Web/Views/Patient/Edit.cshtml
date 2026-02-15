@@ -1,0 +1,345 @@
+﻿@model PharmaCare.Data.Models.Patient
+@{
+    ViewData["Title"] = "Edit Profile";
+    Layout = "_LayoutAuth";
+}
+
+<main class="px-4 md:px-20 lg:px-40 py-8 max-w-[1200px] mx-auto w-full pb-32">
+    <div class="mb-8">
+        <h1 class="text-[#111518] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Edit Patient Profile</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">Maintain accurate health and contact information for safer prescriptions and personalized care.</p>
+    </div>
+
+    <form asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.PatientId)
+        @Html.HiddenFor(m => m.UserId)
+        
+        <div class="grid grid-cols-1 gap-8">
+            <!-- Section 1: Personal Information -->
+            <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">person</span>
+                        Personal Information
+                    </h2>
+                </div>
+                <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Full Name (Read-only from User) -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Full Name</label>
+                        <input class="w-full rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-950 dark:border-gray-800 text-gray-400 cursor-not-allowed" 
+                               disabled 
+                               type="text" 
+                               value="@Model.User.FirstName @Model.User.LastName"/>
+                        <span class="text-xs text-gray-500">Contact support to update your name</span>
+                    </div>
+                    
+                    <!-- Email (Read-only) -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Email Address (Read-only)</label>
+                        <input class="w-full rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-950 dark:border-gray-800 text-gray-400 cursor-not-allowed" 
+                               disabled 
+                               type="email" 
+                               value="@Model.User.Email"/>
+                        <span class="text-xs text-gray-500">Email cannot be changed. Contact support if needed.</span>
+                    </div>
+                    
+                    <!-- Phone Number (Read-only from User) -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Phone Number</label>
+                        <input class="w-full rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-950 dark:border-gray-800 text-gray-400 cursor-not-allowed" 
+                               disabled 
+                               type="tel" 
+                               value="@(Model.User.PhoneNumber ?? "Not provided")"/>
+                        <span class="text-xs text-gray-500">Contact support to update phone number</span>
+                    </div>
+                    
+                    <!-- Date of Birth -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="DateOfBirth" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Date of Birth</label>
+                        <input asp-for="DateOfBirth" 
+                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
+                               type="date"/>
+                        <span asp-validation-for="DateOfBirth" class="text-xs text-red-500"></span>
+                    </div>
+                    
+                    <!-- Gender -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="Gender" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Gender</label>
+                        <select asp-for="Gender" 
+                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="text-xs text-red-500"></span>
+                    </div>
+                    
+                    <!-- Blood Type -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="BloodType" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Blood Type</label>
+                        <select asp-for="BloodType" 
+                                asp-items="Html.GetEnumSelectList<PharmaCare.Data.Models.Enums.BloodType>()"
+                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary">
+                            <option value="">Unknown</option>
+                        </select>
+                        <span asp-validation-for="BloodType" class="text-xs text-red-500"></span>
+                    </div>
+                    
+                    <!-- Address -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="Address" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Address</label>
+                        <input asp-for="Address" 
+                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
+                               type="text" 
+                               placeholder="Street address"/>
+                        <span asp-validation-for="Address" class="text-xs text-red-500"></span>
+                    </div>
+                    
+                    <!-- City -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="City" class="text-sm font-semibold text-gray-700 dark:text-gray-300">City</label>
+                        <input asp-for="City" 
+                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
+                               type="text" 
+                               placeholder="City name"/>
+                        <span asp-validation-for="City" class="text-xs text-red-500"></span>
+                    </div>
+                    
+                    <!-- Height -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="Height" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Height (cm)</label>
+                        <input asp-for="Height" 
+                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
+                               type="number" 
+                               step="0.1" 
+                               placeholder="e.g., 175.5"/>
+                        <span asp-validation-for="Height" class="text-xs text-red-500"></span>
+                    </div>
+                    
+                    <!-- Weight -->
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="Weight" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Weight (kg)</label>
+                        <input asp-for="Weight" 
+                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
+                               type="number" 
+                               step="0.1" 
+                               placeholder="e.g., 70.5"/>
+                        <span asp-validation-for="Weight" class="text-xs text-red-500"></span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Section 2: Safety Flags -->
+                <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-rose-500">warning</span>
+                            Critical Safety Flags
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-lg p-4 mb-6 flex gap-3">
+                            <span class="material-symbols-outlined text-rose-600 dark:text-rose-400">info</span>
+                            <p class="text-sm text-rose-800 dark:text-rose-200">
+                                <strong>Important:</strong> These flags directly affect AI medication recommendations. Please keep them accurate.
+                            </p>
+                        </div>
+                        <div class="space-y-6">
+                            <!-- Pregnancy -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white">Currently Pregnant</p>
+                                    <p class="text-xs text-gray-500">Update if status has changed recently</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input asp-for="IsPregnant" class="sr-only peer" type="checkbox"/>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+                                </label>
+                            </div>
+                            
+                            <!-- Breastfeeding -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white">Currently Breastfeeding</p>
+                                    <p class="text-xs text-gray-500">Certain medications pass through milk</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input asp-for="IsBreastfeeding" class="sr-only peer" type="checkbox"/>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                                </label>
+                            </div>
+                            
+                            <!-- Kidney Disease -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white">Chronic Kidney Disease</p>
+                                    <p class="text-xs text-gray-500">Affects medication dosing</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input asp-for="HasKidneyDisease" class="sr-only peer" type="checkbox"/>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
+                                </label>
+                            </div>
+                            
+                            <!-- Liver Disease -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white">Chronic Liver Disease</p>
+                                    <p class="text-xs text-gray-500">Affects drug metabolism</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input asp-for="HasLiverDisease" class="sr-only peer" type="checkbox"/>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+                            
+                            <!-- Drug Allergies -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white">Known Drug Allergies</p>
+                                    <p class="text-xs text-gray-500">List specific medications below</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input asp-for="HasDrugAllergies" id="hasDrugAllergies" class="sr-only peer" type="checkbox"/>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-500"></div>
+                                </label>
+                            </div>
+                            
+                            <!-- Drug Allergy Details (Conditional) -->
+                            <div id="drugAllergyDetailsDiv" style="display: @(Model.HasDrugAllergies ? "block" : "none")">
+                                <div class="flex flex-col gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                                    <label asp-for="DrugAllergyDetails" class="text-sm font-semibold text-red-900 dark:text-red-200">Specify Drug Allergies</label>
+                                    <textarea asp-for="DrugAllergyDetails" 
+                                              class="w-full rounded-lg border-red-300 dark:border-red-700 dark:bg-gray-800 focus:border-red-500 focus:ring-red-500" 
+                                              rows="3" 
+                                              placeholder="e.g., Penicillin causes severe rash, Ibuprofen causes stomach bleeding"></textarea>
+                                    <span asp-validation-for="DrugAllergyDetails" class="text-xs text-red-600"></span>
+                                    <p class="text-xs text-red-700 dark:text-red-300">Be specific about reactions for safety</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Lifestyle -->
+                <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">monitor_heart</span>
+                            Lifestyle Factors
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Smoking Status -->
+                        <div class="flex flex-col gap-2">
+                            <label asp-for="SmokingStatus" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Smoking Status</label>
+                            <select asp-for="SmokingStatus" 
+                                    asp-items="Html.GetEnumSelectList<PharmaCare.Data.Models.Enums.SmokingStatus>()"
+                                    class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary">
+                                <option value="">Not specified</option>
+                            </select>
+                            <span asp-validation-for="SmokingStatus" class="text-xs text-red-500"></span>
+                        </div>
+                        
+                        <!-- Alcohol Consumption -->
+                        <div class="flex flex-col gap-2">
+                            <label asp-for="AlcoholConsumption" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Alcohol Consumption</label>
+                            <select asp-for="AlcoholConsumption" 
+                                    asp-items="Html.GetEnumSelectList<PharmaCare.Data.Models.Enums.AlcoholConsumption>()"
+                                    class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary">
+                                <option value="">Not specified</option>
+                            </select>
+                            <span asp-validation-for="AlcoholConsumption" class="text-xs text-red-500"></span>
+                        </div>
+                        
+                        <!-- Exercise Frequency -->
+                        <div class="flex flex-col gap-2">
+                            <label asp-for="ExerciseFrequency" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Exercise Frequency</label>
+                            <select asp-for="ExerciseFrequency" 
+                                    asp-items="Html.GetEnumSelectList<PharmaCare.Data.Models.Enums.ExerciseFrequency>()"
+                                    class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary">
+                                <option value="">Not specified</option>
+                            </select>
+                            <span asp-validation-for="ExerciseFrequency" class="text-xs text-red-500"></span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Section 4: Additional Notes -->
+            <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">notes</span>
+                        Additional Notes
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="flex flex-col gap-2">
+                        <label asp-for="AdditionalNotes" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Medical Notes (Optional)</label>
+                        <textarea asp-for="AdditionalNotes" 
+                                  class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
+                                  rows="4" 
+                                  placeholder="Any additional health information, concerns, or notes for your healthcare providers..."></textarea>
+                        <span asp-validation-for="AdditionalNotes" class="text-xs text-red-500"></span>
+                        <p class="text-xs text-gray-500">This information helps provide better care</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Sticky Action Bar -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-4 z-50 shadow-2xl lg:left-64">
+            <div class="max-w-[1200px] mx-auto flex items-center justify-between">
+                <div class="hidden md:flex flex-col">
+                    <span class="text-xs text-gray-500 uppercase font-black tracking-widest">Profile Status</span>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Editing Mode</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <a asp-action="Profile" 
+                       class="flex-1 md:flex-none px-8 py-3 rounded-lg font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="flex-1 md:flex-none px-12 py-3 rounded-lg font-bold text-white bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</main>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Show/hide drug allergy details based on checkbox
+        const hasDrugAllergiesCheckbox = document.getElementById('hasDrugAllergies');
+        const drugAllergyDetailsDiv = document.getElementById('drugAllergyDetailsDiv');
+
+        function toggleDrugAllergyDetails() {
+            if (hasDrugAllergiesCheckbox.checked) {
+                drugAllergyDetailsDiv.style.display = 'block';
+            } else {
+                drugAllergyDetailsDiv.style.display = 'none';
+                // Clear the textarea when unchecked
+                const textarea = drugAllergyDetailsDiv.querySelector('textarea');
+                if (textarea) textarea.value = '';
+            }
+        }
+
+        // Set initial state
+        toggleDrugAllergyDetails();
+
+        // Add event listener
+        hasDrugAllergiesCheckbox.addEventListener('change', toggleDrugAllergyDetails);
+    </script>
+}

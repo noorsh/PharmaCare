@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PharmaCare</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-dark bg-primary mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-hospital"></i> PharmaCare
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            @if (User.IsInRole("Patient"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Patient" asp-action="Profile">My Profile</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Consultation" asp-action="Index">Consultations</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Pharmacist") || User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Patient" asp-action="List">Patients</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Consultation" asp-action="Pending">Consultations</a>
+                                </li>
+                            }
+                        }
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i> @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                    @if (User.IsInRole("Patient"))
+                                    {
+                                        <li><a class="dropdown-item" asp-controller="Patient" asp-action="Profile">My Profile</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Patient" asp-action="Edit">Edit Profile</a></li>
+                                    }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-box-arrow-right"></i> Logout
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                    <i class="bi bi-person-plus"></i> Register
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <div class="container">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted mt-5">
+        <div class="container">
+            &copy; 2025 - PharmaCare - AI-Powered Pharmacy Management System
+        </div>
+    </footer>
+
+<!-- jQuery (required for validation) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

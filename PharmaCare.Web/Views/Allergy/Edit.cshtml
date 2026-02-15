@@ -1,0 +1,14 @@
+﻿@* 
+    Edit.cshtml for Allergy
+    This view is identical to Create.cshtml - they share the same form
+    The form automatically detects Edit mode based on AllergyId
+*@
+
+@model PharmaCare.Data.Models.Allergy
+@{
+    ViewData["Title"] = "Edit Allergy";
+    Layout = "_LayoutAuth";
+}
+
+@* Use the same form as Create - it handles both modes *@
+@await Html.PartialAsync("Create", Model)

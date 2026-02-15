@@ -1,0 +1,205 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.PatientDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Welcome Hero -->
+<div class="bg-white dark:bg-[#1a2632] rounded-xl p-8 border border-[#e5e7eb] dark:border-[#2d3a4b] mb-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm">
+    <div class="space-y-2">
+        <h2 class="text-3xl font-black tracking-tight">Welcome back, @Model.PatientName!</h2>
+        <p class="text-[#617789] dark:text-[#94a3b8] text-lg max-w-xl">
+            @DateTime.Now.ToString("dddd, MMMM dd, yyyy") - 
+            @(DateTime.Now.Hour < 12 ? "Good morning" : DateTime.Now.Hour < 18 ? "Good afternoon" : "Good evening")
+        </p>
+    </div>
+    <a asp-controller="Consultation" asp-action="Start" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-primary/20 whitespace-nowrap">
+        <span class="material-symbols-outlined">add_circle</span>
+        Start New Consultation
+    </a>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Active Medications -->
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">pill</span>
+            @if (Model.RecentMedicationAdded)
+            {
+                <span class="text-xs font-bold text-green-500">+1 New</span>
+            }
+        </div>
+        <p class="text-sm font-medium text-[#617789] dark:text-[#94a3b8]">Active Medications</p>
+        <p class="text-3xl font-black mt-1">@Model.ActiveMedicationsCount</p>
+    </div>
+
+    <!-- Known Allergies -->
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-red-500 bg-red-100 dark:bg-red-500/10 p-2 rounded-lg">warning</span>
+        </div>
+        <p class="text-sm font-medium text-[#617789] dark:text-[#94a3b8]">Known Allergies</p>
+        <p class="text-3xl font-black mt-1">@Model.AllergiesCount</p>
+        @if (Model.SevereAllergiesCount > 0)
+        {
+            <p class="text-xs text-red-500 font-bold mt-1">@Model.SevereAllergiesCount severe</p>
+        }
+    </div>
+
+    <!-- Medical Conditions -->
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-amber-500 bg-amber-100 dark:bg-amber-500/10 p-2 rounded-lg">medical_information</span>
+        </div>
+        <p class="text-sm font-medium text-[#617789] dark:text-[#94a3b8]">Medical Conditions</p>
+        <p class="text-3xl font-black mt-1">@Model.MedicalConditionsCount</p>
+    </div>
+
+    <!-- Total Consultations -->
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-purple-500 bg-purple-100 dark:bg-purple-500/10 p-2 rounded-lg">event_available</span>
+        </div>
+        <p class="text-sm font-medium text-[#617789] dark:text-[#94a3b8]">Total Consultations</p>
+        <p class="text-3xl font-black mt-1">@Model.TotalConsultationsCount</p>
+        @if (Model.PendingConsultationsCount > 0)
+        {
+            <p class="text-xs text-primary font-bold mt-1">@Model.PendingConsultationsCount pending</p>
+        }
+    </div>
+</div>
+
+<!-- Main Content Split -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left: Quick Actions & Recent Activity -->
+    <div class="lg:col-span-2 space-y-8">
+        <!-- Quick Actions -->
+        <section>
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined">bolt</span>
+                Quick Actions
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a asp-controller="Consultation" asp-action="Start" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">psychology</span>
+                    <span class="text-sm font-bold text-center">Start Consultation</span>
+                </a>
+                
+                <a asp-controller="Patient" asp-action="CurrentMedications" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">medication</span>
+                    <span class="text-sm font-bold text-center">Manage Medications</span>
+                </a>
+                
+                <a asp-controller="Patient" asp-action="EditProfile" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">manage_accounts</span>
+                    <span class="text-sm font-bold text-center">Update Health Profile</span>
+                </a>
+                
+                <a asp-controller="Patient" asp-action="Allergies" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">health_and_safety</span>
+                    <span class="text-sm font-bold text-center">Manage Allergies</span>
+                </a>
+                
+                <a asp-controller="Patient" asp-action="MedicalHistory" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">history</span>
+                    <span class="text-sm font-bold text-center">Medical History</span>
+                </a>
+                
+                <a asp-controller="Patient" asp-action="Profile" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">emergency</span>
+                    <span class="text-sm font-bold text-center">Emergency Contact</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Recent Activity -->
+        @if (Model.RecentActivities != null && Model.RecentActivities.Any())
+        {
+            <section>
+                <h3 class="text-xl font-bold mb-4">Recent Activity</h3>
+                <div class="bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl overflow-hidden shadow-sm">
+                    <div class="divide-y divide-[#e5e7eb] dark:divide-[#2d3a4b]">
+                        @foreach (var activity in Model.RecentActivities.Take(3))
+                        {
+                            <div class="p-4 flex gap-4">
+                                <div class="flex-shrink-0 size-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-primary">@activity.Icon</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-semibold">@activity.Title</p>
+                                    <p class="text-xs text-[#617789] dark:text-[#94a3b8]">@activity.Description</p>
+                                </div>
+                                @if (!string.IsNullOrEmpty(activity.ActionLink))
+                                {
+                                    <a href="@activity.ActionLink" class="text-primary text-sm font-medium">View</a>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="p-4 bg-[#f9fafb] dark:bg-[#1c2a38] text-center">
+                        <a asp-controller="Patient" asp-action="ActivityLog" class="text-sm font-bold text-[#617789] dark:text-[#94a3b8] hover:text-primary">View All Activity</a>
+                    </div>
+                </div>
+            </section>
+        }
+    </div>
+
+    <!-- Right: Health Alerts & Profile Snapshot -->
+    <div class="space-y-6">
+        <!-- Health Alerts -->
+        @if (Model.HealthAlerts != null && Model.HealthAlerts.Any())
+        {
+            <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-5 rounded-xl">
+                <div class="flex items-center gap-3 mb-3 text-amber-800 dark:text-amber-500">
+                    <span class="material-symbols-outlined">campaign</span>
+                    <h4 class="font-bold">Health Alerts</h4>
+                </div>
+                <ul class="space-y-3">
+                    @foreach (var alert in Model.HealthAlerts.Take(3))
+                    {
+                        <li class="flex gap-3 text-sm text-amber-800 dark:text-amber-200/80">
+                            <span class="material-symbols-outlined text-sm mt-0.5">@alert.Icon</span>
+                            <p>@alert.Message</p>
+                        </li>
+                    }
+                </ul>
+                <a asp-controller="Patient" asp-action="Alerts" class="mt-4 block w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors text-center">View All Alerts</a>
+            </div>
+        }
+
+        <!-- Profile Snapshot -->
+        <div class="bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl p-5 shadow-sm">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="size-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">
+                    @Model.PatientName.Substring(0, 1).ToUpper()
+                </div>
+                <div>
+                    <h4 class="font-bold">@Model.PatientName</h4>
+                    <p class="text-xs text-[#617789] dark:text-[#94a3b8]">
+                        @if (Model.Age.HasValue)
+                        {
+                            <text>Age: @Model.Age</text>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BloodType))
+                        {
+                            <text> • @Model.BloodType</text>
+                        }
+                    </p>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <div class="flex justify-between text-[10px] font-bold uppercase text-[#94a3b8] mb-1">
+                        <span>Profile Completion</span>
+                        <span>@Model.ProfileCompletionPercentage%</span>
+                    </div>
+                    <div class="w-full bg-[#f0f2f4] dark:bg-[#2d3a4b] h-1.5 rounded-full">
+                        <div class="bg-primary h-full rounded-full" style="width: @Model.ProfileCompletionPercentage%"></div>
+                    </div>
+                </div>
+                <a href="/Patient/Edit" class="block w-full text-sm font-bold py-2 border border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors text-center">Edit Profile</a>
+            </div>
+        </div>
+    </div>
+</div>

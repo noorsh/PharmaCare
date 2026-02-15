@@ -1,0 +1,120 @@
+﻿@model PharmaCare.Data.Models.CurrentMedication
+@{
+    ViewData["Title"] = "Add Current Medication";
+}
+
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="fw-bold py-3 mb-4">
+        <span class="text-muted fw-light">Profile / Medications /</span> Add Current Medication
+    </h4>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-capsule"></i> Add Medication Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Important:</strong> Please list all medications you're currently taking, including prescriptions, over-the-counter drugs, vitamins, and supplements. This helps prevent dangerous drug interactions.
+                    </div>
+
+                    <form asp-action="Create" method="post">
+                        <input type="hidden" asp-for="PatientId" />
+                        <input type="hidden" asp-for="IsActive" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="MedicationName" class="form-label">
+                                Medication Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="MedicationName" class="form-control" 
+                                   placeholder="e.g., Aspirin, Metformin, Vitamin D" />
+                            <span asp-validation-for="MedicationName" class="text-danger"></span>
+                            <small class="form-text text-muted">Include brand name and/or generic name</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Dosage" class="form-label">Dosage</label>
+                                <input asp-for="Dosage" class="form-control" 
+                                       placeholder="e.g., 100mg, 2 tablets" />
+                                <span asp-validation-for="Dosage" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Frequency" class="form-label">Frequency</label>
+                                <select asp-for="Frequency" class="form-select">
+                                    <option value="">Select Frequency</option>
+                                    <option value="Once daily">Once daily</option>
+                                    <option value="Twice daily">Twice daily</option>
+                                    <option value="Three times daily">Three times daily</option>
+                                    <option value="Four times daily">Four times daily</option>
+                                    <option value="Every other day">Every other day</option>
+                                    <option value="Once weekly">Once weekly</option>
+                                    <option value="As needed">As needed (PRN)</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <span asp-validation-for="Frequency" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="StartDate" class="form-label">Start Date</label>
+                            <input asp-for="StartDate" class="form-control" type="date" />
+                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                            <small class="form-text text-muted">When did you start taking this medication?</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Purpose" class="form-label">Purpose/Reason</label>
+                            <textarea asp-for="Purpose" class="form-control" rows="2" 
+                                      placeholder="e.g., For high blood pressure, To manage diabetes"></textarea>
+                            <span asp-validation-for="Purpose" class="text-danger"></span>
+                            <small class="form-text text-muted">Why are you taking this medication?</small>
+                        </div>
+
+                        <div class="alert alert-warning" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle"></i> Reminder:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Include ALL medications - prescriptions, over-the-counter, vitamins, and supplements</li>
+                                <li>List each medication separately (don't combine multiple medications in one entry)</li>
+                                <li>Update this list whenever your medications change</li>
+                            </ul>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-controller="Patient" asp-action="Profile" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Add Medication
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-question-circle"></i> Common Examples</h6>
+                    <p class="card-text small text-muted mb-2">Include medications like:</p>
+                    <ul class="small text-muted mb-0">
+                        <li><strong>Prescriptions:</strong> Metformin, Lisinopril, Levothyroxine</li>
+                        <li><strong>Over-the-counter:</strong> Aspirin, Ibuprofen, Antihistamines</li>
+                        <li><strong>Vitamins/Supplements:</strong> Vitamin D, Calcium, Fish Oil</li>
+                        <li><strong>Birth Control:</strong> Contraceptive pills, patches, IUDs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
