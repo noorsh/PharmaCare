@@ -205,253 +205,224 @@ private int CalculateAge(DateTime dateOfBirth)
         }
 
 
-    public async Task<IActionResult> Dashboard()
-    {
-        // Get current user ID
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
-        // Get patient with User navigation property
-        var patient = await _patientService.GetPatientByUserIdAsync(userId);
-        
-        if (patient == null)
-            return NotFound();
-
-        // Get all data
-        var medicalHistories =( await _medicalHistoryService.GetMedicalHistoriesByPatientIdAsync(patient.PatientId)).ToList();
-        var allergies =( await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId)).ToList();
-        var medications = (await _currentMedicationService.GetCurrentMedicationsByPatientIdAsync(patient.PatientId))
-            .ToList();
-        var viewModel = new PatientDashboardViewModel
+        public async Task<IActionResult> Dashboard()
         {
-            // Patient Info - FROM ApplicationUser
-            PatientName = patient.User.FirstName,
-            Age = CalculateAge(patient.DateOfBirth),
-            BloodType = patient.BloodType?.GetDisplayName(),
-            ProfileCompletionPercentage = CalculateProfileCompletion(patient),
+            // Get current user ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            // Get patient with User navigation property
+            var patient = await _patientService.GetPatientByUserIdAsync(userId);
+            
+            if (patient == null)
+                return NotFound();
 
-            // Stats - Simple counts
-            ActiveMedicationsCount = medications.Count(),
-            RecentMedicationAdded = medications.Any(m => m.StartDate >= DateTime.Now.AddDays(-7)),
-            AllergiesCount = allergies.Count(),
-            SevereAllergiesCount = allergies.Count(a => a.Severity.GetDisplayName()== Enums.AllergySeverity.Severe.GetDisplayName() || a.Severity.GetDisplayName() == Enums.AllergySeverity.LifeThreatening.GetDisplayName()),
-          //  MedicalConditionsCount = medicalHistories.Count(h => h.Status == "Active" || h.Status == "Chronic"),
-            TotalConsultationsCount = 0, // TODO: Implement when you build Consultation
-            PendingConsultationsCount = 0, // TODO: Implement when you build Consultation
-
-            // Recent Activities - Simple implementation
-            RecentActivities = GetRecentActivities(medications, medicalHistories),
-
-            // Health Alerts
-            HealthAlerts = GetHealthAlerts(patient, medicalHistories)
-        };
-
-        return View(viewModel);
-    }
-
-    private int CalculateAge(DateTime? dateOfBirth)
-    {
-        if (!dateOfBirth.HasValue) return 0;
-        var today = DateTime.Today;
-        var age = today.Year - dateOfBirth.Value.Year;
-        if (dateOfBirth.Value.Date > today.AddYears(-age)) age--;
-        return age;
-    }
-
-    private int CalculateProfileCompletion(Patient patient)
-    {
-        int totalFields = 14;
-        int filledFields = 0;
-        
-        // ApplicationUser fields
-        if (!string.IsNullOrEmpty(patient.User?.FirstName)) filledFields++;
-        if (!string.IsNullOrEmpty(patient.User?.Email)) filledFields++;
-        if (!string.IsNullOrEmpty(patient.User?.PhoneNumber)) filledFields++;
-        
-        // Patient fields
-        if (patient.DateOfBirth!=null) filledFields++;
-        if (!string.IsNullOrEmpty(patient.Gender)) filledFields++;
-        if (!string.IsNullOrEmpty(patient.BloodType.GetDisplayName())) filledFields++;
-        // if (!string.IsNullOrEmpty(patient.EmergencyContactName)) filledFields++;
-        // if (!string.IsNullOrEmpty(patient.EmergencyContactPhone)) filledFields++;
-        // if (!string.IsNullOrEmpty(patient.EmergencyContactRelationship)) filledFields++;
-        if (!string.IsNullOrEmpty(patient.SmokingStatus.GetDisplayName())) filledFields++;
-        if (!string.IsNullOrEmpty(patient.AlcoholConsumption.GetDisplayName())) filledFields++;
-        if (!string.IsNullOrEmpty(patient.ExerciseFrequency.GetDisplayName())) filledFields++;
-        
-        // Safety flags (considered filled if set either way)
-        filledFields++; // IsPregnant (bool always has value)
-        filledFields++; // IsBreastfeeding (bool always has value)
-        
-        return (int)((double)filledFields / totalFields * 100);
-    }
-
-    private List<ActivityItem> GetRecentActivities(
-        List<CurrentMedication> medications, 
-        List<MedicalHistory> histories)
-    {
-        var activities = new List<ActivityItem>();
-        
-        // Recent medications
-        var recentMeds = medications
-            .OrderByDescending(m => m.StartDate)
-            .Take(2);
-        
-        foreach (var med in recentMeds)
-        {
-            activities.Add(new ActivityItem
+            // Get all data
+            var medicalHistories =( await _medicalHistoryService.GetMedicalHistoriesByPatientIdAsync(patient.PatientId)).ToList();
+            var allergies =( await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId)).ToList();
+            var medications = (await _currentMedicationService.GetCurrentMedicationsByPatientIdAsync(patient.PatientId))
+                .ToList();
+            var viewModel = new PatientDashboardViewModel
             {
-                Icon = "pill",
-                Title = $"Medication added: {med.MedicationName}",
-                Description = $"{med.Dosage} • Started {med.StartDate:MMM dd}",
-                ActionLink = Url.Action("CurrentMedications", "Patient")
-            });
+                // Patient Info - FROM ApplicationUser
+                PatientName = patient.User.FirstName,
+                Age = CalculateAge(patient.DateOfBirth),
+                BloodType = patient.BloodType?.GetDisplayName(),
+                ProfileCompletionPercentage = CalculateProfileCompletion(patient),
+
+                // Stats - Simple counts
+                ActiveMedicationsCount = medications.Count(),
+                RecentMedicationAdded = medications.Any(m => m.StartDate >= DateTime.Now.AddDays(-7)),
+                AllergiesCount = allergies.Count(),
+                SevereAllergiesCount = allergies.Count(a => a.Severity.GetDisplayName()== Enums.AllergySeverity.Severe.GetDisplayName() || a.Severity.GetDisplayName() == Enums.AllergySeverity.LifeThreatening.GetDisplayName()),
+              //  MedicalConditionsCount = medicalHistories.Count(h => h.Status == "Active" || h.Status == "Chronic"),
+                TotalConsultationsCount = 0, // TODO: Implement when you build Consultation
+                PendingConsultationsCount = 0, // TODO: Implement when you build Consultation
+
+                // Recent Activities - Simple implementation
+                RecentActivities = GetRecentActivities(medications, medicalHistories),
+
+                // Health Alerts
+                HealthAlerts = GetHealthAlerts(patient, medicalHistories)
+            };
+
+            return View(viewModel);
         }
-        
-        // Recent medical history
-        var recentHistory = histories
-            .OrderByDescending(h => h.DiagnosedDate)
-            .Take(2);
-        
-        foreach (var history in recentHistory)
+
+        private int CalculateAge(DateTime? dateOfBirth)
         {
-            activities.Add(new ActivityItem
+            if (!dateOfBirth.HasValue) return 0;
+            var today = DateTime.Today;
+            var age = today.Year - dateOfBirth.Value.Year;
+            if (dateOfBirth.Value.Date > today.AddYears(-age)) age--;
+            return age;
+        }
+
+        private int CalculateProfileCompletion(Patient patient)
+        {
+            int totalFields = 14;
+            int filledFields = 0;
+            
+            // ApplicationUser fields
+            if (!string.IsNullOrEmpty(patient.User?.FirstName)) filledFields++;
+            if (!string.IsNullOrEmpty(patient.User?.Email)) filledFields++;
+            if (!string.IsNullOrEmpty(patient.User?.PhoneNumber)) filledFields++;
+            
+            // Patient fields
+            if (patient.DateOfBirth!=null) filledFields++;
+            if (!string.IsNullOrEmpty(patient.Gender)) filledFields++;
+            if (!string.IsNullOrEmpty(patient.BloodType.GetDisplayName())) filledFields++;
+            // if (!string.IsNullOrEmpty(patient.EmergencyContactName)) filledFields++;
+            // if (!string.IsNullOrEmpty(patient.EmergencyContactPhone)) filledFields++;
+            // if (!string.IsNullOrEmpty(patient.EmergencyContactRelationship)) filledFields++;
+            if (!string.IsNullOrEmpty(patient.SmokingStatus.GetDisplayName())) filledFields++;
+            if (!string.IsNullOrEmpty(patient.AlcoholConsumption.GetDisplayName())) filledFields++;
+            if (!string.IsNullOrEmpty(patient.ExerciseFrequency.GetDisplayName())) filledFields++;
+            
+            // Safety flags (considered filled if set either way)
+            filledFields++; // IsPregnant (bool always has value)
+            filledFields++; // IsBreastfeeding (bool always has value)
+            
+            return (int)((double)filledFields / totalFields * 100);
+        }
+
+        private List<ActivityItem> GetRecentActivities(
+            List<CurrentMedication> medications, 
+            List<MedicalHistory> histories)
+        {
+            var activities = new List<ActivityItem>();
+            
+            // Recent medications
+            var recentMeds = medications
+                .OrderByDescending(m => m.StartDate)
+                .Take(2);
+            
+            foreach (var med in recentMeds)
             {
-                Icon = "medical_information",
-                Title = $"Condition added: {history.ConditionName}",
-                Description = $"Diagnosed {history.DiagnosedDate:MMM dd}",
-                ActionLink = Url.Action("MedicalHistory", "Patient")
-            });
-        }
-        
-        return activities.OrderByDescending(a => a.Description).Take(5).ToList();
-    }
-
-    private List<HealthAlert> GetHealthAlerts(Patient patient, List<MedicalHistory> histories)
-    {
-        var alerts = new List<HealthAlert>();
-        
-        // Check emergency contact
-        if (string.IsNullOrEmpty(patient.User?.FirstName))
-        {
-            alerts.Add(new HealthAlert
+                activities.Add(new ActivityItem
+                {
+                    Icon = "pill",
+                    Title = $"Medication added: {med.MedicationName}",
+                    Description = $"{med.Dosage} • Started {med.StartDate:MMM dd}",
+                    ActionLink = Url.Action("CurrentMedications", "Patient")
+                });
+            }
+            
+            // Recent medical history
+            var recentHistory = histories
+                .OrderByDescending(h => h.DiagnosedDate)
+                .Take(2);
+            
+            foreach (var history in recentHistory)
             {
-                Icon = "priority_high",
-                Message = "Please add emergency contact information for safety"
-            });
+                activities.Add(new ActivityItem
+                {
+                    Icon = "medical_information",
+                    Title = $"Condition added: {history.ConditionName}",
+                    Description = $"Diagnosed {history.DiagnosedDate:MMM dd}",
+                    ActionLink = Url.Action("MedicalHistory", "Patient")
+                });
+            }
+            
+            return activities.OrderByDescending(a => a.Description).Take(5).ToList();
         }
-        
-        // Check medical history
-        if (!histories.Any())
+
+        private List<HealthAlert> GetHealthAlerts(Patient patient, List<MedicalHistory> histories)
         {
-            alerts.Add(new HealthAlert
+            var alerts = new List<HealthAlert>();
+            
+            // Check emergency contact
+            if (string.IsNullOrEmpty(patient.User?.FirstName))
             {
-                Icon = "info",
-                Message = "Add your medical history for more accurate AI assessments"
-            });
-        }
-        
-        // Check safety flags
-        if (patient.IsPregnant || patient.IsBreastfeeding)
-        {
-            alerts.Add(new HealthAlert
+                alerts.Add(new HealthAlert
+                {
+                    Icon = "priority_high",
+                    Message = "Please add emergency contact information for safety"
+                });
+            }
+            
+            // Check medical history
+            if (!histories.Any())
             {
-                Icon = "info",
-                Message = "Safety flags are active. AI will consider these in recommendations."
-            });
+                alerts.Add(new HealthAlert
+                {
+                    Icon = "info",
+                    Message = "Add your medical history for more accurate AI assessments"
+                });
+            }
+            
+            // Check safety flags
+            if (patient.IsPregnant || patient.IsBreastfeeding)
+            {
+                alerts.Add(new HealthAlert
+                {
+                    Icon = "info",
+                    Message = "Safety flags are active. AI will consider these in recommendations."
+                });
+            }
+            
+            return alerts;
         }
         
-        return alerts;
-    }
-    
-    
-[Authorize(Roles = "Patient")]
-public async Task<IActionResult> Allergies()
-{
-    try
-    {
-        // Get current patient
-        var userId = _userManager.GetUserId(User);
-        var patient = await _patientService.GetPatientByUserIdAsync(userId);
+        
 
-        if (patient == null)
+
+        // Optional: PDF and Wallet Card features (placeholders for now)
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> DownloadAllergiesPDF()
         {
-            TempData["Error"] = "Patient profile not found.";
-            return RedirectToAction("Dashboard");
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var patient = await _patientService.GetPatientByUserIdAsync(userId);
+
+                if (patient == null)
+                {
+                    TempData["Error"] = "Patient profile not found.";
+                    return RedirectToAction("Allergies");
+                }
+
+                var allergies = await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId);
+
+                // TODO: Generate PDF using a PDF library (iTextSharp, QuestPDF, etc.)
+                // For now, return a placeholder
+                TempData["Info"] = "PDF download feature coming soon.";
+                return RedirectToAction("Allergies");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating PDF");
+                TempData["Error"] = "An error occurred while generating the PDF.";
+                return RedirectToAction("Allergies");
+            }
         }
 
-        // Pass PatientId to view for "Add" button
-        ViewBag.PatientId = patient.PatientId;
-
-        // Get allergies for this patient
-        var allergies = await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId);
-
-        return View(allergies);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error loading allergies");
-        TempData["Error"] = "An error occurred while loading your allergies.";
-        return RedirectToAction("Dashboard");
-    }
-}
-
-// Optional: PDF and Wallet Card features (placeholders for now)
-[Authorize(Roles = "Patient")]
-public async Task<IActionResult> DownloadAllergiesPDF()
-{
-    try
-    {
-        var userId = _userManager.GetUserId(User);
-        var patient = await _patientService.GetPatientByUserIdAsync(userId);
-
-        if (patient == null)
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> PrintWalletCard()
         {
-            TempData["Error"] = "Patient profile not found.";
-            return RedirectToAction("Allergies");
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var patient = await _patientService.GetPatientByUserIdAsync(userId);
+
+                if (patient == null)
+                {
+                    TempData["Error"] = "Patient profile not found.";
+                    return RedirectToAction("Allergies");
+                }
+
+                var allergies = await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId);
+
+                // TODO: Generate printable wallet card
+                // For now, return a placeholder
+                TempData["Info"] = "Wallet card feature coming soon.";
+                return RedirectToAction("Allergies");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating wallet card");
+                TempData["Error"] = "An error occurred while generating the wallet card.";
+                return RedirectToAction("Allergies");
+            }
         }
-
-        var allergies = await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId);
-
-        // TODO: Generate PDF using a PDF library (iTextSharp, QuestPDF, etc.)
-        // For now, return a placeholder
-        TempData["Info"] = "PDF download feature coming soon.";
-        return RedirectToAction("Allergies");
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error generating PDF");
-        TempData["Error"] = "An error occurred while generating the PDF.";
-        return RedirectToAction("Allergies");
-    }
-}
-
-[Authorize(Roles = "Patient")]
-public async Task<IActionResult> PrintWalletCard()
-{
-    try
-    {
-        var userId = _userManager.GetUserId(User);
-        var patient = await _patientService.GetPatientByUserIdAsync(userId);
-
-        if (patient == null)
-        {
-            TempData["Error"] = "Patient profile not found.";
-            return RedirectToAction("Allergies");
-        }
-
-        var allergies = await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId);
-
-        // TODO: Generate printable wallet card
-        // For now, return a placeholder
-        TempData["Info"] = "Wallet card feature coming soon.";
-        return RedirectToAction("Allergies");
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error generating wallet card");
-        TempData["Error"] = "An error occurred while generating the wallet card.";
-        return RedirectToAction("Allergies");
-    }
-}
     }
 }

@@ -26,32 +26,34 @@ namespace PharmaCare.MVC.Controllers
             _logger = logger;
         }
 
-        // GET: Allergy/Create
-        public async Task<IActionResult> Create(int patientId)
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> Index()
         {
             try
             {
-                // Verify the patient belongs to the current user
-                var user = await _userManager.GetUserAsync(User);
-                var patient = await _patientService.GetPatientByUserIdAsync(user.Id);
+                // Get current patient
+                var userId = _userManager.GetUserId(User);
+                var patient = await _patientService.GetPatientByUserIdAsync(userId);
 
-                if (patient == null || patient.PatientId != patientId)
+                if (patient == null)
                 {
-                    return Forbid();
+                    TempData["Error"] = "Patient profile not found.";
+                    return RedirectToAction("Dashboard");
                 }
 
-                var allergy = new Allergy
-                {
-                    PatientId = patientId
-                };
+                // Pass PatientId to view for "Add" button
+                ViewBag.PatientId = patient.PatientId;
 
-                return View(allergy);
+                // Get allergies for this patient
+                var allergies = await _allergyService.GetAllergiesByPatientIdAsync(patient.PatientId);
+
+                return View(allergies);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error loading create allergy page for patient {patientId}");
-                TempData["Error"] = "An error occurred. Please try again.";
-                return RedirectToAction("Profile", "Patient");
+                _logger.LogError(ex, "Error loading allergies");
+                TempData["Error"] = "An error occurred while loading your allergies.";
+                return RedirectToAction("Dashboard");
             }
         }
 
@@ -62,7 +64,7 @@ namespace PharmaCare.MVC.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return View(allergy);
+                return View("Allergies");
             }
 
             try

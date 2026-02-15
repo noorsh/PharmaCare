@@ -130,19 +130,19 @@
                         <span>My Profile</span>
                     </a>
                     
-                    <a asp-controller="Patient" asp-action="MedicalHistory" 
+                    <a asp-controller="MedicalHistory" asp-action="Index" 
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "MedicalHistory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                         <span class="material-symbols-outlined">history</span>
                         <span>Medical History</span>
                     </a>
                     
-                    <a asp-controller="Patient" asp-action="Allergies" 
+                    <a asp-controller="Allergy" asp-action="Index" 
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Allergies" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                         <span class="material-symbols-outlined">warning</span>
                         <span>Allergies</span>
                     </a>
                     
-                    <a asp-controller="Patient" asp-action="CurrentMedications" 
+                    <a asp-controller="CurrentMedication" asp-action="Index" 
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "CurrentMedications" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                         <span class="material-symbols-outlined">pill</span>
                         <span>Current Medications</span>

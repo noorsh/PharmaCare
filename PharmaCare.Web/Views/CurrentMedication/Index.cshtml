@@ -1,0 +1,403 @@
+﻿@model IEnumerable<PharmaCare.Data.Models.CurrentMedication>
+@{
+    ViewData["Title"] = "Current Medications";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Header Actions -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <h1 class="text-3xl font-black tracking-tight text-[#111118] dark:text-white">Current Medications</h1>
+    <button onclick="openAddModal()" class="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined text-[20px]">add</span>
+        <span>Add New Medication</span>
+    </button>
+</div>
+
+<!-- Info Banner -->
+<div class="bg-primary/10 border border-primary/20 rounded-xl p-5 flex items-start sm:items-center justify-between gap-4 mb-8">
+    <div class="flex items-start gap-4">
+        <div class="bg-primary text-white p-2 rounded-lg flex items-center justify-center">
+            <span class="material-symbols-outlined">info</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+            <h3 class="font-bold text-primary text-base">Track everything in one place</h3>
+            <p class="text-[#60618a] dark:text-gray-300 text-sm">Keep your medication list up to date for better health tracking.</p>
+        </div>
+    </div>
+</div>
+
+@{
+    var medicationsList = Model?.ToList() ?? new List<PharmaCare.Data.Models.CurrentMedication>();
+    var totalCount = medicationsList.Count;
+    var activeCount = medicationsList.Count(m => m.IsActive);
+    var inactiveCount = totalCount - activeCount;
+}
+
+<!-- Stats Bar -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white dark:bg-[#1a1a2e] p-5 rounded-xl border border-[#dbdbe6] dark:border-[#2d2d3d] shadow-sm flex flex-col gap-1">
+        <p class="text-[#60618a] dark:text-gray-400 text-sm font-medium">Total Medications</p>
+        <p class="text-3xl font-black text-[#111118] dark:text-white">@totalCount</p>
+    </div>
+    <div class="bg-white dark:bg-[#1a1a2e] p-5 rounded-xl border border-[#dbdbe6] dark:border-[#2d2d3d] shadow-sm flex flex-col gap-1">
+        <p class="text-[#60618a] dark:text-gray-400 text-sm font-medium">Active</p>
+        <p class="text-3xl font-black text-primary">@activeCount</p>
+    </div>
+    <div class="bg-white dark:bg-[#1a1a2e] p-5 rounded-xl border border-[#dbdbe6] dark:border-[#2d2d3d] shadow-sm flex flex-col gap-1">
+        <p class="text-[#60618a] dark:text-gray-400 text-sm font-medium">Inactive</p>
+        <p class="text-3xl font-black text-[#111118] dark:text-white">@inactiveCount</p>
+    </div>
+</div>
+
+@if (!medicationsList.Any())
+{
+    <!-- Empty State -->
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="size-24 rounded-full bg-primary/5 flex items-center justify-center text-primary/30 mb-6">
+            <span class="material-symbols-outlined text-[64px]">medication</span>
+        </div>
+        <h2 class="text-2xl font-bold text-[#111118] dark:text-white mb-2">No medications added yet</h2>
+        <p class="text-[#60618a] dark:text-gray-400 max-w-sm mb-8">Keep track of your medications by adding them here.</p>
+        <button onclick="openAddModal()" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg shadow-primary/20">
+            Add Your First Medication
+        </button>
+    </div>
+}
+else
+{
+    <!-- Medication List -->
+    <div class="flex flex-col gap-4">
+        <h2 class="text-xl font-bold text-[#111118] dark:text-white mt-4">Medication List</h2>
+        
+        @foreach (var medication in medicationsList.OrderByDescending(m => m.IsActive).ThenBy(m => m.MedicationName))
+        {
+            <div class="bg-white dark:bg-[#1a1a2e] border-l-4 @(medication.IsActive ? "border-l-primary" : "border-l-gray-400") rounded-xl border-y border-r border-[#dbdbe6] dark:border-[#2d2d3d] p-6 shadow-sm hover:shadow-md transition-shadow @(!medication.IsActive ? "opacity-60" : "")">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="flex items-center gap-5 flex-1">
+                        <div class="size-12 rounded-full @(medication.IsActive ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-gray-800 text-gray-400") flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-2xl">medication</span>
+                        </div>
+                        <div class="flex flex-col gap-1 flex-1">
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <h3 class="text-lg font-bold text-[#111118] dark:text-white">
+                                    @medication.MedicationName@(!string.IsNullOrEmpty(medication.Dosage) ? $" {medication.Dosage}" : "")
+                                </h3>
+                                @if (medication.IsActive)
+                                {
+                                    <span class="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] uppercase font-bold tracking-wider rounded flex items-center gap-1">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                        ACTIVE
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] uppercase font-bold tracking-wider rounded flex items-center gap-1">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+                                        INACTIVE
+                                    </span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(medication.Frequency))
+                            {
+                                <p class="text-sm text-[#60618a] dark:text-gray-400">@medication.Frequency</p>
+                            }
+                            @if (!string.IsNullOrEmpty(medication.Purpose))
+                            {
+                                <p class="text-xs text-[#60618a] dark:text-gray-400 mt-1">
+                                    <span class="font-semibold">Purpose:</span> @medication.Purpose
+                                </p>
+                            }
+                            @if (medication.StartDate.HasValue)
+                            {
+                                <p class="text-xs text-[#60618a] dark:text-gray-400">
+                                    <span class="font-semibold">Started:</span> @medication.StartDate.Value.ToString("MMM yyyy")
+                                </p>
+                            }
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick='openEditModal(@Json.Serialize(new { 
+                            id = medication.CurrentMedicationId, 
+                            name = medication.MedicationName, 
+                            dosage = medication.Dosage,
+                            frequency = medication.Frequency,
+                            startDate = medication.StartDate?.ToString("yyyy-MM-dd"),
+                            purpose = medication.Purpose,
+                            isActive = medication.IsActive
+                        }))' class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#dbdbe6] dark:border-[#2d2d3d] text-sm font-medium text-[#111118] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252545] transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">edit</span> Edit
+                        </button>
+                        <button onclick="confirmDelete(@medication.CurrentMedicationId, '@medication.MedicationName')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-100 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">delete_forever</span> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Add/Edit Medication Modal -->
+<div id="medicationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-xl max-w-lg w-full shadow-2xl my-8">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6" id="modalTitle">Add Medication</h2>
+
+            <form asp-controller="CurrentMedication" asp-action="Create" method="post" id="medicationForm" class="space-y-5">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="CurrentMedicationId" id="medicationId" value="0" />
+                <input type="hidden" name="PatientId" value="@ViewBag.PatientId" />
+
+                <!-- Medication Name -->
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Medication Name *</label>
+                    <input type="text" name="MedicationName" id="medicationName" required maxlength="200"
+                           class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary"
+                           placeholder="e.g., Lisinopril, Aspirin" />
+                </div>
+
+                <!-- Dosage & Frequency -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Dosage</label>
+                        <input type="text" name="Dosage" id="dosage" maxlength="100"
+                               class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary"
+                               placeholder="e.g., 10mg, 500mg" />
+                        <p class="text-xs text-slate-500 mt-1">Example: 10mg, 500mg, 1 tablet</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Frequency</label>
+                        <select name="Frequency" id="frequency" 
+                                onchange="toggleCustomFrequency()"
+                                class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary">
+                            <option value="">Select frequency...</option>
+                            <option value="Once daily">Once daily</option>
+                            <option value="Twice daily">Twice daily (BID)</option>
+                            <option value="Three times daily">Three times daily (TID)</option>
+                            <option value="Four times daily">Four times daily (QID)</option>
+                            <option value="Every other day">Every other day</option>
+                            <option value="Once weekly">Once weekly</option>
+                            <option value="Twice weekly">Twice weekly</option>
+                            <option value="As needed">As needed (PRN)</option>
+                            <option value="With meals">With meals</option>
+                            <option value="Before bedtime">Before bedtime</option>
+                            <option value="Every morning">Every morning</option>
+                            <option value="Custom">Custom...</option>
+                        </select>
+                        <!-- Custom frequency input (hidden by default) -->
+                        <input type="text" id="customFrequencyInput" maxlength="100"
+                               class="hidden w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary mt-2"
+                               placeholder="Enter custom frequency" />
+                    </div>
+                </div>
+
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Start Date (Optional)</label>
+                    <input type="date" name="StartDate" id="startDate"
+                           class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary" />
+                </div>
+
+                <!-- Purpose -->
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Purpose (Optional)</label>
+                    <input type="text" name="Purpose" id="purpose" maxlength="500"
+                           class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-primary focus:border-primary"
+                           placeholder="e.g., Blood pressure control" />
+                </div>
+
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Status</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="IsActive" value="true" id="statusActive" checked
+                                   class="w-4 h-4 text-primary focus:ring-primary border-slate-300" />
+                            <span class="flex items-center gap-1.5 text-sm font-medium">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                Active
+                            </span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="IsActive" value="false" id="statusInactive"
+                                   class="w-4 h-4 text-primary focus:ring-primary border-slate-300" />
+                            <span class="flex items-center gap-1.5 text-sm font-medium">
+                                <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+                                Inactive
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeMedicationModal()"
+                            class="px-5 py-2.5 rounded-lg font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 shadow-md transition-all">
+                        <span id="submitButtonText">Save Medication</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 flex-shrink-0">
+                <span class="material-symbols-outlined text-3xl">warning</span>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Medication?</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Are you sure you want to delete this medication?
+                </p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white" id="deleteMedicationName"></p>
+            </div>
+        </div>
+        <form id="deleteForm" method="post">
+            @Html.AntiForgeryToken()
+            <div class="flex gap-3 justify-end mt-6">
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-all">
+                    Yes, Delete
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Toggle custom frequency input
+        function toggleCustomFrequency() {
+            const frequencySelect = document.getElementById('frequency');
+            const customInput = document.getElementById('customFrequencyInput');
+            
+            if (frequencySelect.value === 'Custom') {
+                customInput.classList.remove('hidden');
+                customInput.focus();
+            } else {
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            }
+        }
+
+        // Add Modal
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add Medication';
+            document.getElementById('submitButtonText').textContent = 'Save Medication';
+            document.getElementById('medicationForm').action = '@Url.Action("Create", "CurrentMedication")';
+            document.getElementById('medicationForm').reset();
+            document.getElementById('medicationId').value = '0';
+            document.getElementById('statusActive').checked = true;
+            document.getElementById('customFrequencyInput').classList.add('hidden');
+            document.getElementById('medicationModal').classList.remove('hidden');
+        }
+
+        // Edit Modal
+        function openEditModal(data) {
+            document.getElementById('modalTitle').textContent = 'Edit Medication';
+            document.getElementById('submitButtonText').textContent = 'Update Medication';
+            document.getElementById('medicationForm').action = '@Url.Action("Edit", "CurrentMedication")/' + data.id;
+
+            document.getElementById('medicationId').value = data.id;
+            document.getElementById('medicationName').value = data.name;
+            document.getElementById('dosage').value = data.dosage || '';
+            document.getElementById('startDate').value = data.startDate || '';
+            document.getElementById('purpose').value = data.purpose || '';
+
+            // Set frequency - check if it's a standard option
+            const frequencySelect = document.getElementById('frequency');
+            const customInput = document.getElementById('customFrequencyInput');
+            const frequencyValue = data.frequency || '';
+            
+            // Try to find the value in the dropdown
+            let foundOption = false;
+            for (let option of frequencySelect.options) {
+                if (option.value === frequencyValue) {
+                    frequencySelect.value = frequencyValue;
+                    foundOption = true;
+                    break;
+                }
+            }
+            
+            // If not found, use Custom option
+            if (!foundOption && frequencyValue) {
+                frequencySelect.value = 'Custom';
+                customInput.value = frequencyValue;
+                customInput.classList.remove('hidden');
+            } else {
+                customInput.classList.add('hidden');
+            }
+
+            if (data.isActive) {
+                document.getElementById('statusActive').checked = true;
+            } else {
+                document.getElementById('statusInactive').checked = true;
+            }
+
+            document.getElementById('medicationModal').classList.remove('hidden');
+        }
+
+        function closeMedicationModal() {
+            document.getElementById('medicationModal').classList.add('hidden');
+        }
+
+        // Handle form submission - use custom value if selected
+        document.getElementById('medicationForm').addEventListener('submit', function(e) {
+            const frequencySelect = document.getElementById('frequency');
+            const customInput = document.getElementById('customFrequencyInput');
+            
+            if (frequencySelect.value === 'Custom' && customInput.value.trim()) {
+                // Create a hidden input to submit the custom value
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'Frequency';
+                hiddenInput.value = customInput.value.trim();
+                this.appendChild(hiddenInput);
+                
+                // Disable the select so it doesn't submit "Custom"
+                frequencySelect.disabled = true;
+            } else if (frequencySelect.value === 'Custom' && !customInput.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a custom frequency or select a standard option.');
+                return false;
+            }
+        });
+
+        // Delete confirmation
+        function confirmDelete(medicationId, medicationName) {
+            document.getElementById('deleteMedicationName').textContent = 'Medication: ' + medicationName;
+            document.getElementById('deleteForm').action = '/CurrentMedication/Delete/' + medicationId;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        // Close modals on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeMedicationModal();
+                closeDeleteModal();
+            }
+        });
+
+        // Close modals on background click
+        document.getElementById('medicationModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeMedicationModal();
+        });
+        document.getElementById('deleteModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeDeleteModal();
+        });
+    </script>
+}

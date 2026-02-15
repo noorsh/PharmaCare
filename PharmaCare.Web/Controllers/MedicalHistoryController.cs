@@ -26,6 +26,14 @@ namespace PharmaCare.MVC.Controllers
             _logger = logger;
         }
 
+        public async Task<IActionResult> Index()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var patient = await _patientService.GetPatientByUserIdAsync(user.Id);
+            var medicalHistories = await _medicalHistoryService.GetMedicalHistoriesByPatientIdAsync(patient.PatientId);
+            ViewBag.PatientId = patient.PatientId;
+            return View(medicalHistories);
+        }
         // GET: MedicalHistory/Create
         public async Task<IActionResult> Create(int patientId)
         {
