@@ -12,19 +12,30 @@ Layout = "_LandingLayout";
             </div>
             <h1 class="text-xl font-bold tracking-tight text-[#111518]">PharmaCare</h1>
         </a>
-        <nav class="hidden md:flex items-center gap-8">
-            <a href="#patients" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">For Patients</a>
-            <a href="#pharmacists" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">For Pharmacists</a>
-            <a href="#about" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">About Us</a>
-        </nav>
+      
         <div class="flex items-center gap-4">
-            @if (User.Identity?.IsAuthenticated == true)
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient"))
             {
-            <a asp-controller="Patient" asp-action="Dashboard" class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
-                Dashboard
-            </a>
+                <a asp-controller="Patient" asp-action="Dashboard" class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
+                    Dashboard
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
+                        Logout
+                    </button>
+                </form>
+            } else if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+            {
+                <a asp-controller="Admin" asp-action="Dashboard" class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
+                    Dashboard
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button  class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
+                        Logout
+                    </button>
+                </form>
             }
-            else
+            else 
             {
             <a asp-controller="Account" asp-action="Login" class="text-sm font-semibold text-gray-700 hover:text-primary transition-colors">
                 Log in

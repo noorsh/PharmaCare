@@ -1,0 +1,316 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+    <div class="flex flex-col gap-1 rounded-lg bg-white p-5 border-l-4 border-primary shadow-sm">
+        <p class="text-sm font-medium text-[#617989]">Total Users</p>
+        <div class="flex items-end justify-between">
+            <h3 class="text-2xl font-bold">@Model.TotalUsers.ToString("N0")</h3>
+            <span class="text-xs font-bold text-green-600 flex items-center bg-green-50 px-1 rounded">
+                +@Model.UserGrowthPercent% <span class="material-symbols-outlined text-xs">trending_up</span>
+            </span>
+        </div>
+    </div>
+    <div class="flex flex-col gap-1 rounded-lg bg-white p-5 border-l-4 border-green-500 shadow-sm">
+        <p class="text-sm font-medium text-[#617989]">Active Patients</p>
+        <div class="flex items-end justify-between">
+            <h3 class="text-2xl font-bold">@Model.ActivePatients.ToString("N0")</h3>
+            <span class="text-xs font-bold text-green-600 flex items-center bg-green-50 px-1 rounded">
+                +@Model.PatientGrowthPercent% <span class="material-symbols-outlined text-xs">trending_up</span>
+            </span>
+        </div>
+    </div>
+    <div class="flex flex-col gap-1 rounded-lg bg-white p-5 border-l-4 border-purple-accent shadow-sm">
+        <p class="text-sm font-medium text-[#617989]">Pharmacists</p>
+        <div class="flex items-end justify-between">
+            <h3 class="text-2xl font-bold">@Model.TotalPharmacists</h3>
+            <span class="text-xs font-bold text-green-600 flex items-center bg-green-50 px-1 rounded">
+                +@Model.PharmacistGrowthPercent% <span class="material-symbols-outlined text-xs">trending_up</span>
+            </span>
+        </div>
+        <p class="text-xs text-[#617989]">@Model.ActivePharmacists active, @Model.InactivePharmacists inactive</p>
+    </div>
+    <div class="flex flex-col gap-1 rounded-lg bg-white p-5 border-l-4 border-amber-500 shadow-sm">
+        <p class="text-sm font-medium text-[#617989]">Pending Consultations</p>
+        <div class="flex items-end justify-between">
+            <h3 class="text-2xl font-bold">@Model.PendingConsultations</h3>
+            <span class="text-xs font-bold text-amber-600 flex items-center bg-amber-50 px-1 rounded">
+                <span class="material-symbols-outlined text-xs">warning</span>
+            </span>
+        </div>
+    </div>
+    <div class="flex flex-col gap-1 rounded-lg bg-white p-5 border-l-4 border-green-400 shadow-sm">
+        <p class="text-sm font-medium text-[#617989]">System Health</p>
+        <div class="flex items-end justify-between">
+            <h3 class="text-2xl font-bold">@Model.SystemUptime%</h3>
+            <span class="text-xs font-medium text-[#617989]">Uptime</span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div class="flex gap-3 flex-wrap">
+        <a asp-action="Users" asp-controller="Admin" onclick="sessionStorage.setItem('openModal', 'pharmacist')" class="flex items-center gap-2 rounded-lg bg-purple-accent px-4 py-2 text-sm font-bold text-white hover:bg-purple-700 transition-colors">
+            <span class="material-symbols-outlined text-lg">person_add</span>
+            Create Pharmacist Account
+        </a>
+        <a asp-action="Users" asp-controller="Admin" onclick="sessionStorage.setItem('openModal', 'admin')" class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
+            <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+            Create Admin Account
+        </a>
+        <a asp-action="ExportData" asp-controller="Admin" class="flex items-center gap-2 rounded-lg bg-white border border-[#dbe1e6] px-4 py-2 text-sm font-bold text-[#111518] hover:bg-background-light transition-colors">
+            <span class="material-symbols-outlined text-lg">download</span>
+            Export Data
+        </a>
+    </div>
+    <div class="flex items-center gap-2">
+        <span class="text-xs text-[#617989] font-medium uppercase tracking-wider">Viewing data for:</span>
+        <button class="flex items-center gap-1 text-sm font-semibold text-[#111518]">
+            Last 30 Days
+            <span class="material-symbols-outlined text-sm">calendar_month</span>
+        </button>
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<div class="flex flex-col lg:flex-row gap-8">
+    <!-- User Management Table -->
+    <div class="flex-1 min-w-0">
+        <div class="rounded-xl border border-[#dbe1e6] bg-white overflow-hidden shadow-sm">
+            <div class="flex items-center justify-between border-b border-[#dbe1e6] px-6 py-4">
+                <h2 class="text-lg font-bold">User Management</h2>
+                <div class="flex gap-2">
+                    <button class="rounded-lg border border-[#dbe1e6] p-1.5 hover:bg-[#f0f3f4]">
+                        <span class="material-symbols-outlined text-lg">filter_list</span>
+                    </button>
+                    <button class="rounded-lg border border-[#dbe1e6] p-1.5 hover:bg-[#f0f3f4]">
+                        <span class="material-symbols-outlined text-lg">more_vert</span>
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-[#fcfcfd] border-b border-[#dbe1e6]">
+                        <tr>
+                            <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">User Info</th>
+                            <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Role</th>
+                            <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Status</th>
+                            <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Joined Date</th>
+                            <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#dbe1e6]">
+                        @foreach (var user in Model.RecentUsers)
+                        {
+                            <tr class="hover:bg-[#f8fafc] transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                            @user.FullName.Substring(0, 1).ToUpper()
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-semibold text-[#111518]">@user.FullName</span>
+                                            <span class="text-xs text-[#617989]">@user.Email • ID: @user.UserId</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (user.Role == "Pharmacist")
+                                    {
+                                        <span class="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-accent">Pharmacist</span>
+                                    }
+                                    else if (user.Role == "Admin")
+                                    {
+                                        <span class="inline-flex items-center rounded-md bg-primary px-2 py-1 text-xs font-medium text-white">Admin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-primary">Patient</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-green-600"></span>
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-[#f0f3f4] px-2 py-1 text-xs font-medium text-[#617989]">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-[#617989]"></span>
+                                            Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-sm text-[#617989]">@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="editUser('@user.UserId')" class="text-[#617989] hover:text-primary" title="Edit">
+                                            <span class="material-symbols-outlined text-lg">edit</span>
+                                        </button>
+                                        <button onclick="manageRoles('@user.UserId')" class="text-[#617989] hover:text-primary" title="Manage Roles">
+                                            <span class="material-symbols-outlined text-lg">verified_user</span>
+                                        </button>
+                                        <button onclick="moreActions('@user.UserId')" class="text-[#617989] hover:text-primary" title="More">
+                                            <span class="material-symbols-outlined text-lg">more_horiz</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex items-center justify-between border-t border-[#dbe1e6] px-6 py-4">
+                <span class="text-sm text-[#617989]">Showing @Model.RecentUsers.Count() of @Model.TotalUsers users</span>
+                <div class="flex gap-2">
+                    <a asp-action="Users" asp-controller="Admin" class="rounded-lg border border-[#dbe1e6] px-3 py-1 text-sm font-medium hover:bg-[#f0f3f4]">View All Users</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Timeline -->
+        <div class="mt-8 rounded-xl border border-[#dbe1e6] bg-white p-6 shadow-sm">
+            <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">history</span>
+                Recent Admin Activity
+            </h2>
+            <div class="space-y-6">
+                @foreach (var activity in Model.RecentActivities.Take(3))
+                {
+                    <div class="relative flex gap-4 @(activity != Model.RecentActivities.Last() ? "pb-6 before:absolute before:left-[11px] before:top-6 before:h-full before:w-[2px] before:bg-[#f0f3f4]" : "")">
+                        <div class="z-10 h-6 w-6 rounded-full @GetActivityColor(activity.Type) flex items-center justify-center text-white ring-4 ring-white">
+                            <span class="material-symbols-outlined text-[14px]">@GetActivityIcon(activity.Type)</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <p class="text-sm text-[#111518]">
+                                <span class="font-bold">@activity.AdminName</span> @activity.Action
+                            </p>
+                            <span class="text-xs text-[#617989]">@activity.TimeAgo</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="w-full lg:w-80 space-y-6">
+        <!-- System Alerts -->
+        <div class="rounded-xl border border-[#dbe1e6] bg-white p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#617989] mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-500 text-lg">report_problem</span>
+                System Alerts
+            </h3>
+            <div class="space-y-3">
+                @foreach (var alert in Model.SystemAlerts)
+                {
+                    <div class="rounded-lg @(alert.Severity == "High" ? "bg-red-50 border-red-100" : "bg-amber-50 border-amber-100") p-3 border">
+                        <p class="text-xs font-bold @(alert.Severity == "High" ? "text-red-800" : "text-amber-800")">@alert.Title</p>
+                        <p class="text-xs @(alert.Severity == "High" ? "text-red-700" : "text-amber-700") mt-1">@alert.Message</p>
+                    </div>
+                }
+            </div>
+            <button class="w-full mt-4 text-xs font-bold text-primary hover:underline">View All Alerts</button>
+        </div>
+
+        <!-- Today's Activity -->
+        <div class="rounded-xl border border-[#dbe1e6] bg-white p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#617989] mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">event_note</span>
+                Today's Activity
+            </h3>
+            <div class="space-y-4">
+                <div class="flex gap-3">
+                    <div class="h-8 w-8 shrink-0 rounded-full bg-[#f0f3f4] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-sm text-[#111518]">group_add</span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold">@Model.TodayNewUsers new user signups</p>
+                        <p class="text-[10px] text-[#617989]">@Model.UserSignupTrend</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="h-8 w-8 shrink-0 rounded-full bg-[#f0f3f4] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-sm text-[#111518]">pending_actions</span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold">@Model.TodayConsultations consultations</p>
+                        <p class="text-[10px] text-[#617989]">@Model.PendingConsultations pending review</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="rounded-xl bg-primary/10 p-6">
+            <h3 class="text-sm font-bold text-primary mb-3">Admin Resource Hub</h3>
+            <ul class="space-y-2">
+                <li>
+                    <a asp-action="UserGuide" asp-controller="Admin" class="text-xs font-medium text-[#111518] hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">menu_book</span> User Guide
+                    </a>
+                </li>
+                <li>
+                    <a asp-action="Security" asp-controller="Admin" class="text-xs font-medium text-[#111518] hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">security</span> Security Protocol
+                    </a>
+                </li>
+                <li>
+                    <a asp-action="Reports" asp-controller="Admin" class="text-xs font-medium text-[#111518] hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">analytics</span> Custom Report Builder
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+</div>
+
+@section Scripts {
+    <script>
+        function editUser(userId) {
+            window.location.href = '@Url.Action("Users", "Admin")?userId=' + userId;
+        }
+
+        function manageRoles(userId) {
+            window.location.href = '@Url.Action("Users", "Admin")?userId=' + userId;
+        }
+
+        function moreActions(userId) {
+            window.location.href = '@Url.Action("Users", "Admin")?userId=' + userId;
+        }
+    </script>
+}
+
+@functions {
+    private string GetActivityColor(string type)
+    {
+        return type switch
+        {
+            "Create" => "bg-primary",
+            "Update" => "bg-amber-500",
+            "Delete" => "bg-red-500",
+            "Approve" => "bg-green-500",
+            _ => "bg-gray-500"
+        };
+    }
+
+    private string GetActivityIcon(string type)
+    {
+        return type switch
+        {
+            "Create" => "person_add",
+            "Update" => "edit",
+            "Delete" => "delete",
+            "Approve" => "check_circle",
+            _ => "info"
+        };
+    }
+}

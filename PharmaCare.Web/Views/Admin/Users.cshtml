@@ -1,0 +1,451 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.UserManagementViewModel
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-bold text-[#111518]">User Management</h1>
+        <p class="text-[#617989] mt-1">Manage all platform users and assign roles</p>
+    </div>
+    <button onclick="openCreateUserModal()" class="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-lg">
+        <span class="material-symbols-outlined text-[20px]">person_add</span>
+        <span>Add New Pharmacist</span>
+    </button>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white rounded-xl border border-[#dbe1e6] p-4 mb-6 flex flex-wrap items-center gap-4">
+    <form asp-action="Users" method="get" class="flex flex-wrap items-center gap-4 flex-1">
+        <div class="flex-1 min-w-[300px]">
+            <label class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-[#617989]">search</span>
+                <input type="text" name="search" value="@Model.SearchTerm" 
+                       class="form-input w-full rounded-lg border-[#dbe1e6] pl-10 pr-4 h-10 text-sm focus:ring-2 focus:ring-primary/50" 
+                       placeholder="Search by name, email, or ID..." />
+            </label>
+        </div>
+        <div>
+            <select name="role" class="form-select rounded-lg border-[#dbe1e6] h-10 text-sm focus:ring-2 focus:ring-primary/50" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                @if (Model.RoleFilter == "Admin")
+                {
+                    <option value="Admin" selected>Admins</option>
+                }
+                else
+                {
+                    <option value="Admin">Admins</option>
+                }
+                @if (Model.RoleFilter == "Pharmacist")
+                {
+                    <option value="Pharmacist" selected>Pharmacists</option>
+                }
+                else
+                {
+                    <option value="Pharmacist">Pharmacists</option>
+                }
+                @if (Model.RoleFilter == "Patient")
+                {
+                    <option value="Patient" selected>Patients</option>
+                }
+                else
+                {
+                    <option value="Patient">Patients</option>
+                }
+            </select>
+        </div>
+        <div>
+            <select name="status" class="form-select rounded-lg border-[#dbe1e6] h-10 text-sm focus:ring-2 focus:ring-primary/50" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                @if (Model.StatusFilter == "Active")
+                {
+                    <option value="Active" selected>Active</option>
+                }
+                else
+                {
+                    <option value="Active">Active</option>
+                }
+                @if (Model.StatusFilter == "Inactive")
+                {
+                    <option value="Inactive" selected>Inactive</option>
+                }
+                else
+                {
+                    <option value="Inactive">Inactive</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            Apply Filters
+        </button>
+        @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.RoleFilter) || !string.IsNullOrEmpty(Model.StatusFilter))
+        {
+            <a asp-action="Users" class="text-sm text-[#617989] hover:text-primary font-medium">Clear Filters</a>
+        }
+    </form>
+</div>
+
+<!-- Users Table -->
+<div class="rounded-xl border border-[#dbe1e6] bg-white overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-[#fcfcfd] border-b border-[#dbe1e6]">
+                <tr>
+                    <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">User Info</th>
+                    <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Role</th>
+                    <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Status</th>
+                    <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Joined Date</th>
+                    <th class="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#617989]">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#dbe1e6]">
+                @foreach (var user in Model.Users)
+                {
+                    <tr class="hover:bg-[#f8fafc] transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                    @user.FullName.Substring(0, 1).ToUpper()
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-semibold text-[#111518]">@user.FullName</span>
+                                    <span class="text-xs text-[#617989]">@user.Email • ID: @user.UserId</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if (user.Role == "Pharmacist")
+                            {
+                                <span class="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-accent">Pharmacist</span>
+                            }
+                            else if (user.Role == "Admin")
+                            {
+                                <span class="inline-flex items-center rounded-md bg-primary px-2 py-1 text-xs font-medium text-white">Admin</span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-primary">Patient</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4">
+                            @if (user.IsActive)
+                            {
+                                <span class="inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-green-600"></span>
+                                    Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center gap-1 rounded-md bg-[#f0f3f4] px-2 py-1 text-xs font-medium text-[#617989]">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-[#617989]"></span>
+                                    Inactive
+                                </span>
+                            }
+                        </td> 
+                        <td class="px-6 py-4 text-sm text-[#617989]">@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                         <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <button onclick='openEditModal(@Json.Serialize(new { id = user.UserId, name = user.FullName, email = user.Email, phone = user.PhoneNumber }))' 
+                                        class="text-[#617989] hover:text-primary" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button onclick="openRolesModal('@user.UserId', '@user.FullName', '@user.Role')" 
+                                        class="text-[#617989] hover:text-primary" title="Manage Roles">
+                                    <span class="material-symbols-outlined text-lg">verified_user</span>
+                                </button>
+                                <button onclick="confirmDelete('@user.UserId', '@user.FullName')" 
+                                        class="text-[#617989] hover:text-red-600" title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between border-t border-[#dbe1e6] px-6 py-4">
+        <span class="text-sm text-[#617989]">
+            Showing @((Model.CurrentPage - 1) * Model.PageSize + 1) - @Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalUsers) of @Model.TotalUsers users
+        </span>
+        <div class="flex gap-2">
+            @if (Model.CurrentPage > 1)
+            {
+                <a asp-action="Users" asp-route-page="@(Model.CurrentPage - 1)" asp-route-search="@Model.SearchTerm" asp-route-role="@Model.RoleFilter" asp-route-status="@Model.StatusFilter"
+                   class="rounded-lg border border-[#dbe1e6] px-3 py-1 text-sm font-medium hover:bg-[#f0f3f4]">Previous</a>
+            }
+            
+            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+            {
+                <a asp-action="Users" asp-route-page="@i" asp-route-search="@Model.SearchTerm" asp-route-role="@Model.RoleFilter" asp-route-status="@Model.StatusFilter"
+                   class="rounded-lg border border-[#dbe1e6] px-3 py-1 text-sm font-medium @(i == Model.CurrentPage ? "bg-primary text-white" : "hover:bg-[#f0f3f4]")">
+                    @i
+                </a>
+            }
+            
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <a asp-action="Users" asp-route-page="@(Model.CurrentPage + 1)" asp-route-search="@Model.SearchTerm" asp-route-role="@Model.RoleFilter" asp-route-status="@Model.StatusFilter"
+                   class="rounded-lg border border-[#dbe1e6] px-3 py-1 text-sm font-medium hover:bg-[#f0f3f4]">Next</a>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Create Pharmacist Modal -->
+<div id="createPharmacistModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6">Create Pharmacist Account</h2>
+        <form asp-action="CreatePharmacist" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-sm font-semibold mb-2">Full Name *</label>
+                <input type="text" name="FullName" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Email *</label>
+                <input type="email" name="Email" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Phone Number *</label>
+                <input type="tel" name="PhoneNumber" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">License Number *</label>
+                <input type="text" name="LicenseNumber" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Temporary Password *</label>
+                <input type="password" name="Password" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+                <p class="text-xs text-gray-500 mt-1">Min 8 characters, 1 uppercase, 1 number</p>
+            </div>
+            <div class="flex gap-3 justify-end pt-4">
+                <button type="button" onclick="closeCreatePharmacistModal()" class="px-5 py-2.5 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:opacity-90">
+                    Create Pharmacist
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Admin Modal -->
+<div id="createAdminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6">Create Admin Account</h2>
+        <form asp-action="CreateAdmin" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-sm font-semibold mb-2">Full Name *</label>
+                <input type="text" name="FullName" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Email *</label>
+                <input type="email" name="Email" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Password *</label>
+                <input type="password" name="Password" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+                <p class="text-xs text-gray-500 mt-1">Min 8 characters, 1 uppercase, 1 number</p>
+            </div>
+            <div class="flex gap-3 justify-end pt-4">
+                <button type="button" onclick="closeCreateAdminModal()" class="px-5 py-2.5 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:opacity-90">
+                    Create Admin
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6">Edit User</h2>
+        <form asp-action="EditUser" method="post" id="editForm" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="UserId" id="editUserId" />
+            <div>
+                <label class="block text-sm font-semibold mb-2">Full Name</label>
+                <input type="text" name="FullName" id="editFullName" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Email</label>
+                <input type="email" name="Email" id="editEmail" required class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Phone Number</label>
+                <input type="tel" name="PhoneNumber" id="editPhone" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary" />
+            </div>
+            <div class="flex gap-3 justify-end pt-4">
+                <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:opacity-90">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Manage Roles Modal -->
+<div id="rolesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6">Manage Roles</h2>
+        <p class="text-sm text-gray-600 mb-4">User: <span id="rolesUserName" class="font-semibold"></span></p>
+        <form asp-action="UpdateRoles" method="post" id="rolesForm" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="UserId" id="rolesUserId" />
+            <div class="space-y-3">
+                <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="Roles" value="Patient" id="rolePatient" class="w-5 h-5 text-primary" />
+                    <span class="font-medium">Patient</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="Roles" value="Pharmacist" id="rolePharmacist" class="w-5 h-5 text-purple-accent" />
+                    <span class="font-medium">Pharmacist</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="Roles" value="Admin" id="roleAdmin" class="w-5 h-5 text-red-600" />
+                    <span class="font-medium">Admin</span>
+                </label>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-sm text-yellow-800">
+                ⚠️ Changing roles affects user access immediately
+            </div>
+            <div class="flex gap-3 justify-end pt-4">
+                <button type="button" onclick="closeRolesModal()" class="px-5 py-2.5 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:opacity-90">
+                    Update Roles
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <span class="material-symbols-outlined text-3xl">warning</span>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Delete User?</h3>
+                <p class="text-sm text-gray-600" id="deleteUserName"></p>
+            </div>
+        </div>
+        <form asp-action="DeleteUser" method="post" id="deleteForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="UserId" id="deleteUserId" />
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold">
+                    Yes, Delete
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Create Pharmacist Modal
+        function openCreatePharmacistModal() {
+            document.getElementById('createPharmacistModal').classList.remove('hidden');
+        }
+        function closeCreatePharmacistModal() {
+            document.getElementById('createPharmacistModal').classList.add('hidden');
+        }
+
+        // Create Admin Modal
+        function openCreateAdminModal() {
+            document.getElementById('createAdminModal').classList.remove('hidden');
+        }
+        function closeCreateAdminModal() {
+            document.getElementById('createAdminModal').classList.add('hidden');
+        }
+
+        // Edit Modal
+        function openEditModal(data) {
+            document.getElementById('editUserId').value = data.id;
+            document.getElementById('editFullName').value = data.name;
+            document.getElementById('editEmail').value = data.email;
+            document.getElementById('editPhone').value = data.phone || '';
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // Roles Modal
+        function openRolesModal(userId, userName, currentRole) {
+            document.getElementById('rolesUserId').value = userId;
+            document.getElementById('rolesUserName').textContent = userName;
+            
+            // Uncheck all
+            document.getElementById('rolePatient').checked = false;
+            document.getElementById('rolePharmacist').checked = false;
+            document.getElementById('roleAdmin').checked = false;
+            
+            // Check current role
+            if (currentRole === 'Patient') document.getElementById('rolePatient').checked = true;
+            if (currentRole === 'Pharmacist') document.getElementById('rolePharmacist').checked = true;
+            if (currentRole === 'Admin') document.getElementById('roleAdmin').checked = true;
+            
+            document.getElementById('rolesModal').classList.remove('hidden');
+        }
+        function closeRolesModal() {
+            document.getElementById('rolesModal').classList.add('hidden');
+        }
+
+        // Delete Modal
+        function confirmDelete(userId, userName) {
+            document.getElementById('deleteUserId').value = userId;
+            document.getElementById('deleteUserName').textContent = 'Are you sure you want to delete ' + userName + '? This action cannot be undone.';
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        // Close modals on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCreatePharmacistModal();
+                closeCreateAdminModal();
+                closeEditModal();
+                closeRolesModal();
+                closeDeleteModal();
+            }
+        });
+
+        // Close modals on background click
+        document.querySelectorAll('[id$="Modal"]').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.add('hidden');
+                }
+            });
+        });
+
+        // Dashboard button functions (from Dashboard page)
+        function openCreateUserModal() {
+            openCreatePharmacistModal();
+        }
+    </script>
+}

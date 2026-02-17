@@ -152,7 +152,8 @@ public async Task<IActionResult> Register(PatientRegistrationViewModel model)
                     {
                         return Redirect(returnUrl);
                     }
-                    
+                    if(User.IsInRole("Admin"))
+                        return RedirectToAction("Dashboard", "Admin");
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -189,6 +190,14 @@ public async Task<IActionResult> Register(PatientRegistrationViewModel model)
         [HttpGet]
         public IActionResult AccessDenied()
         {
+            if (User.IsInRole("Patient"))
+            {
+                ViewBag.RedirectUrl = Url.Action("Dashboard", "Patient");
+            }
+            else if (User.IsInRole("Pharmacist"))
+            {
+                ViewBag.RedirectUrl = Url.Action("Index", "Pharmacist");
+            }
             return View();
         }
     }
