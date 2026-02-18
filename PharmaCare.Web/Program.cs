@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using PharmaCare.Business.Services;
+using PharmaCare.Business.Services.Interfaces;
 using PharmaCare.Data;
 using PharmaCare.Data.Models;
+using PharmaCare.Data.Repositories;
 using PharmaCare.Data.Repositories.Implementations;
 using PharmaCare.Data.Repositories.Interfaces;
 using PharmaCare.Services.Implementations;
@@ -46,11 +49,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // Repositories
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<IConsultationRepository, ConsultationRepository>();
 builder.Services.AddScoped<IMedicalHistoryRepository, MedicalHistoryRepository>();
 builder.Services.AddScoped<IAllergyRepository, AllergyRepository>();
 builder.Services.AddScoped<ICurrentMedicationRepository, CurrentMedicationRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+
 
 // Services
 builder.Services.AddScoped<IPatientService, PatientService>();
@@ -58,6 +64,7 @@ builder.Services.AddScoped<IConsultationService, ConsultationService>();
 builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
 builder.Services.AddScoped<IAllergyService, AllergyService>();
 builder.Services.AddScoped<ICurrentMedicationService, CurrentMedicationService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 var app = builder.Build();
 
