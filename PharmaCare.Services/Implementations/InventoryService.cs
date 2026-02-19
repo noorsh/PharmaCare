@@ -156,7 +156,7 @@ namespace PharmaCare.Business.Services
                 var inventory = await _inventoryRepository.GetByIdAsync(id);
                 if (inventory != null)
                 {
-                   // _inventoryRepository.de(inventory);
+                    _inventoryRepository.Remove(inventory);
                     await _unitOfWork.SaveChangesAsync();
                     
                     _logger.LogInformation($"Deleted inventory item: {inventory.MedicineName}");

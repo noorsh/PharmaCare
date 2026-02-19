@@ -38,5 +38,12 @@ namespace PharmaCare.Data.Models
         // Navigation Properties
         public AIAssessment? AIAssessment { get; set; }
         public Recommendation? Recommendation { get; set; }
+
+        public string? PharmacistId { get; set; } // ASP.NET Identity UserId (string)
+
+        [ForeignKey("PharmacistId")]
+        public ApplicationUser? Pharmacist { get; set; }
+
+        public DateTime? ReviewedAt { get; set; }
     }
 }

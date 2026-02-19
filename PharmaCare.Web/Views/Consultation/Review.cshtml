@@ -1,0 +1,154 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.ReviewConsultationViewModel
+@{
+    ViewData["Title"] = "Review Consultation";
+    Layout = "_LayoutAuth";
+    var c = Model.Consultation;
+}
+
+<div class="mb-6 flex items-center gap-3">
+    <a asp-action="Queue" class="text-[#617789] hover:text-primary">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <div>
+        <h2 class="text-2xl font-black">Review Consultation #@c.ConsultationId</h2>
+        <p class="text-[#617789] text-sm">@(c.Patient?.User?.FirstName) • Submitted @c.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
+    </div>
+    <span class="ml-auto bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full">
+        Under Review
+    </span>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Left: Patient Info + Symptoms -->
+    <div class="lg:col-span-2 space-y-6">
+
+        <!-- Symptoms -->
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">symptoms</span>
+                Patient Symptoms
+            </h3>
+            <p class="text-sm leading-relaxed">@c.Symptoms</p>
+            <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-[#e5e7eb] dark:border-[#2d3a4b]">
+                <div>
+                    <p class="text-xs text-[#617789] font-medium">Duration</p>
+                    <p class="text-sm font-semibold">@(c.SymptomDuration ?? "Not specified")</p>
+                </div>
+                <div>
+                    <p class="text-xs text-[#617789] font-medium">Severity</p>
+                    @{
+                        var sc = c.SymptomSeverity == "Severe" ? "text-red-500" : c.SymptomSeverity == "Moderate" ? "text-yellow-500" : "text-green-500";
+                    }
+                    <p class="text-sm font-semibold @sc">@(c.SymptomSeverity ?? "Not specified")</p>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(c.AdditionalInformation))
+            {
+                <div class="mt-4 pt-4 border-t border-[#e5e7eb] dark:border-[#2d3a4b]">
+                    <p class="text-xs text-[#617789] font-medium mb-1">Additional Information</p>
+                    <p class="text-sm">@c.AdditionalInformation</p>
+                </div>
+            }
+        </div>
+
+        <!-- AI Assessment -->
+        @if (Model.AIAssessment != null)
+        {
+            <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6">
+                <h3 class="font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">psychology</span>
+                    AI Pre-Assessment
+                    <span class="ml-auto text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        @Model.AIAssessment.ConfidenceScore?.ToString("F0")% confidence
+                    </span>
+                </h3>
+
+                <div class="bg-blue-50 dark:bg-blue-500/10 rounded-lg p-4 mb-4">
+                    <p class="text-sm">@Model.AIAssessment.AssessmentReport</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.AIAssessment.PossibleConditions))
+                {
+                    <div class="mb-3">
+                        <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Possible Conditions</p>
+                        <p class="text-sm font-medium">@Model.AIAssessment.PossibleConditions</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.AIAssessment.SuggestedQuestions))
+                {
+                    <div class="mb-3">
+                        <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Suggested Questions to Ask Patient</p>
+                        <p class="text-sm">@Model.AIAssessment.SuggestedQuestions</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.AIAssessment.RedFlags))
+                {
+                    <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3">
+                        <p class="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">⚠ Red Flags</p>
+                        <p class="text-sm text-red-700 dark:text-red-400">@Model.AIAssessment.RedFlags</p>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Pharmacist Action -->
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">rate_review</span>
+                Pharmacist Decision
+            </h3>
+            <p class="text-sm text-[#617789] mb-4">Review the AI assessment and patient symptoms, then complete the consultation. You can add a recommendation via the Recommendation module.</p>
+
+            <form asp-action="Complete" asp-route-id="@c.ConsultationId" method="post"
+                  onsubmit="return confirm('Mark this consultation as completed?')">
+                @Html.AntiForgeryToken()
+                <button type="submit"
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    Mark as Completed
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right: Patient Profile Summary -->
+    <div class="space-y-4">
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
+            <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-base">person</span>
+                Patient Info
+            </h3>
+            @if (c.Patient != null)
+            {
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-[#617789]">Name</span>
+                        <span class="font-medium">@c.Patient.User?.FirstName @c.Patient.User?.LastName</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[#617789]">Blood Type</span>
+                        <span class="font-medium">@(c.Patient.BloodType.ToString() ?? "Unknown")</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[#617789]">Pregnant</span>
+                        <span class="font-medium @(c.Patient.IsPregnant ? "text-yellow-500" : "")">@(c.Patient.IsPregnant ? "Yes ⚠" : "No")</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[#617789]">Breastfeeding</span>
+                        <span class="font-medium @(c.Patient.IsBreastfeeding ? "text-yellow-500" : "")">@(c.Patient.IsBreastfeeding ? "Yes ⚠" : "No")</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-[#e5e7eb] dark:border-[#2d3a4b]">
+                    <a asp-controller="Patient" asp-action="Details" asp-route-id="@c.PatientId"
+                       class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                        View Full Profile
+                        <span class="material-symbols-outlined text-sm">open_in_new</span>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

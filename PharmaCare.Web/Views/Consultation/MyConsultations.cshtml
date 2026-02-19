@@ -1,0 +1,100 @@
+﻿@model IEnumerable<PharmaCare.Data.Models.Consultation>
+@{
+    ViewData["Title"] = "My Consultations";
+    Layout = "_LayoutAuth";
+}
+
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-black tracking-tight">My Consultations</h2>
+        <p class="text-[#617789] dark:text-[#94a3b8] mt-1">Track all your consultation requests</p>
+    </div>
+    <a asp-action="Start"
+       class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined">add</span>
+        New Consultation
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-[#617789]">inbox</span>
+        <p class="font-semibold mt-3">No consultations yet</p>
+        <p class="text-sm text-[#617789] mt-1">Start a new consultation to get help from a pharmacist</p>
+        <a asp-action="Start" class="inline-block mt-4 bg-primary text-white font-bold py-2 px-6 rounded-lg text-sm">
+            Start Consultation
+        </a>
+    </div>
+}
+else
+{
+    <div class="space-y-4">
+        @foreach (var consultation in Model)
+        {
+            var statusColor = consultation.Status switch
+            {
+                "Pending" => "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400",
+                "UnderReview" => "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
+                "Completed" => "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
+                "Cancelled" => "bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
+                _ => "bg-gray-100 text-gray-600"
+            };
+            var statusIcon = consultation.Status switch
+            {
+                "Pending" => "schedule",
+                "UnderReview" => "visibility",
+                "Completed" => "check_circle",
+                "Cancelled" => "cancel",
+                _ => "help"
+            };
+
+            <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-xs font-bold text-[#617789]">#@consultation.ConsultationId</span>
+                            <span class="@statusColor text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                                <span class="material-symbols-outlined text-xs">@statusIcon</span>
+                                @consultation.Status
+                            </span>
+                            @if (!string.IsNullOrEmpty(consultation.SymptomSeverity))
+                            {
+                                var severityColor = consultation.SymptomSeverity == "Severe" ? "text-red-500" :
+                                                   consultation.SymptomSeverity == "Moderate" ? "text-yellow-500" : "text-green-500";
+                                <span class="text-xs font-semibold @severityColor">@consultation.SymptomSeverity</span>
+                            }
+                        </div>
+                        <p class="text-sm font-medium truncate">@consultation.Symptoms</p>
+                        <div class="flex gap-4 mt-2 text-xs text-[#617789]">
+                            <span>Submitted @consultation.CreatedAt.ToString("MMM dd, yyyy")</span>
+                            @if (!string.IsNullOrEmpty(consultation.SymptomDuration))
+                            {
+                                <span>Duration: @consultation.SymptomDuration</span>
+                            }
+                            @if (consultation.CompletedAt.HasValue)
+                            {
+                                <span>Completed @consultation.CompletedAt.Value.ToString("MMM dd, yyyy")</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a asp-action="Details" asp-route-id="@consultation.ConsultationId"
+                           class="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+                            View
+                            <span class="material-symbols-outlined text-base">arrow_forward</span>
+                        </a>
+                        @if (consultation.Status == "Pending")
+                        {
+                            <form asp-action="Cancel" asp-route-id="@consultation.ConsultationId" method="post"
+                                  onsubmit="return confirm('Cancel this consultation?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="text-xs text-red-500 hover:underline font-medium">Cancel</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

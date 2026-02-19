@@ -1,0 +1,105 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.ConsultationViewModel
+@{
+    ViewData["Title"] = "Consultation Submitted";
+    Layout = "_LayoutAuth";
+    var assessment = TempData["AssessmentReport"]?.ToString();
+    var conditions = TempData["PossibleConditions"]?.ToString();
+    var redFlags = TempData["RedFlags"]?.ToString();
+    var confidence = TempData["ConfidenceScore"]?.ToString();
+}
+
+<div class="max-w-2xl mx-auto">
+
+    <!-- Success Header -->
+    <div class="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-xl p-6 mb-6 text-center">
+        <span class="material-symbols-outlined text-green-500 text-5xl">check_circle</span>
+        <h2 class="text-2xl font-black mt-2">Consultation Submitted!</h2>
+        <p class="text-[#617789] dark:text-[#94a3b8] mt-1">
+            Consultation #@Model.Consultation.ConsultationId • Submitted @Model.Consultation.CreatedAt.ToString("MMM dd, yyyy 'at' HH:mm")
+        </p>
+        <span class="inline-block mt-3 bg-yellow-100 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs font-bold px-3 py-1 rounded-full">
+            ⏳ Pending Pharmacist Review
+        </span>
+    </div>
+
+    <!-- AI Assessment Card -->
+    @if (!string.IsNullOrEmpty(assessment))
+    {
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6 mb-6">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-primary">psychology</span>
+                <h3 class="font-bold text-lg">AI Pre-Assessment</h3>
+                @if (!string.IsNullOrEmpty(confidence))
+                {
+                    <span class="ml-auto text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        @confidence% confidence
+                    </span>
+                }
+            </div>
+
+            <div class="bg-blue-50 dark:bg-blue-500/10 rounded-lg p-4 mb-4">
+                <p class="text-sm text-blue-800 dark:text-blue-300">@assessment</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(conditions))
+            {
+                <div class="mb-3">
+                    <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Possible Conditions</p>
+                    <p class="text-sm font-medium">@conditions</p>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(redFlags))
+            {
+                <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3">
+                    <p class="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">⚠ Red Flags to Watch For</p>
+                    <p class="text-sm text-red-700 dark:text-red-400">@redFlags</p>
+                </div>
+            }
+
+            <p class="text-xs text-[#617789] mt-4 italic">
+                This is an AI-generated pre-assessment for pharmacist reference only. A licensed pharmacist will review and provide the final recommendation.
+            </p>
+        </div>
+    }
+
+    <!-- What's Next -->
+    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6 mb-6">
+        <h3 class="font-bold mb-4">What happens next?</h3>
+        <div class="space-y-3">
+            <div class="flex gap-3">
+                <div class="w-7 h-7 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center shrink-0">✓</div>
+                <div>
+                    <p class="text-sm font-semibold">Consultation submitted</p>
+                    <p class="text-xs text-[#617789]">Your symptoms have been recorded</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div class="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
+                <div>
+                    <p class="text-sm font-semibold">Pharmacist review</p>
+                    <p class="text-xs text-[#617789]">A licensed pharmacist will review the AI assessment and your symptoms</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div class="w-7 h-7 rounded-full bg-[#e5e7eb] dark:bg-[#2d3a4b] text-xs font-bold flex items-center justify-center shrink-0">3</div>
+                <div>
+                    <p class="text-sm font-semibold">Recommendation provided</p>
+                    <p class="text-xs text-[#617789]">You'll receive the pharmacist's final recommendation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-3">
+        <a asp-action="MyConsultations"
+           class="flex-1 text-center border border-[#e5e7eb] dark:border-[#2d3a4b] font-semibold py-3 px-4 rounded-lg hover:bg-[#f9fafb] dark:hover:bg-[#2d3a4b] transition-all text-sm">
+            View My Consultations
+        </a>
+        <a asp-controller="Patient" asp-action="Dashboard"
+           class="flex-1 text-center bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-lg transition-all text-sm">
+            Back to Dashboard
+        </a>
+    </div>
+</div>

@@ -1,0 +1,301 @@
+﻿@{
+    ViewData["Title"] = "New Consultation";
+    Layout = "_LayoutAuth";
+}
+
+<div class="max-w-2xl mx-auto flex flex-col" style="height: calc(100vh - 150px)">
+
+    <!-- Header -->
+    <div class="mb-4 flex items-center justify-between shrink-0">
+        <div>
+            <h2 class="text-2xl font-black tracking-tight">New Consultation</h2>
+            <p class="text-[#617789] dark:text-[#94a3b8] text-sm mt-0.5">Answer a few questions — a pharmacist will review your case.</p>
+        </div>
+        <a asp-controller="Patient" asp-action="Dashboard" class="text-[#617789] hover:text-primary">
+            <span class="material-symbols-outlined">close</span>
+        </a>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mb-4 shrink-0">
+        <div class="flex justify-between text-xs text-[#617789] mb-1">
+            <span>Step <span id="currentStepLabel">1</span> of @ViewBag.TotalSteps</span>
+            <span id="progressPercent">0%</span>
+        </div>
+        <div class="w-full bg-[#e5e7eb] dark:bg-[#2d3a4b] rounded-full h-1.5">
+            <div id="progressBar" class="bg-primary h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Chat Window -->
+    <div id="chatWindow"
+         class="flex-1 overflow-y-auto bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-4 space-y-4 mb-4">
+    </div>
+
+    <!-- Input Area -->
+    <div id="inputArea" class="shrink-0">
+        <!-- Text input (shown for text steps) -->
+        <div id="textInput" class="hidden flex gap-3">
+            <input id="userTextInput" type="text"
+                   placeholder="Type your answer..."
+                   class="flex-1 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                   onkeydown="if(event.key==='Enter') submitTextAnswer()" />
+            <button onclick="submitTextAnswer()"
+                class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-xl transition-all">
+                <span class="material-symbols-outlined">send</span>
+            </button>
+        </div>
+
+        <!-- Button options (shown for button steps) -->
+        <div id="buttonInput" class="hidden flex flex-wrap gap-2 justify-center"></div>
+    </div>
+
+    <!-- Hidden submit form -->
+    <form id="submitForm" asp-action="SubmitChat" method="post" class="hidden">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="answersJson" name="AnswersJson" />
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    const totalSteps = @ViewBag.TotalSteps;
+    const patientName = '@ViewBag.PatientName';
+    const answers = []; // { stepNumber, answer }
+    let currentStep = 0;
+
+    window.onload = () => {
+        // Bot greeting then first question
+        appendBotMessage(`Hi ${patientName}! 👋 I'm going to ask you a few questions to help the pharmacist understand your situation.`);
+        setTimeout(() => askStep(1), 800);
+    };
+
+    function askStep(stepNumber) {
+        currentStep = stepNumber;
+        updateProgress(stepNumber);
+
+        // First step is always text
+        if (stepNumber === 1) {
+            showTextInput("e.g. I have a headache, fever, sore throat...");
+            appendBotMessage("What is your main complaint today?");
+            return;
+        }
+
+        // Get next step from server
+        fetch('/Consultation/NextStep', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentStep: stepNumber - 1, answer: answers[answers.length - 1]?.answer ?? '' })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.isEmergency) {
+                showEmergency(data.message);
+                return;
+            }
+            if (data.isComplete) {
+                showSummary();
+                return;
+            }
+            appendBotMessage(data.step.question);
+            if (data.step.inputType === 'buttons') {
+                showButtonInput(data.step.options);
+            } else {
+                showTextInput(data.step.placeholder ?? 'Type your answer...');
+            }
+        });
+    }
+
+    function submitTextAnswer() {
+        const input = document.getElementById('userTextInput');
+        const answer = input.value.trim();
+        if (!answer) return;
+        input.value = '';
+        handleAnswer(answer);
+    }
+
+    function handleAnswer(answer) {
+        appendUserMessage(answer);
+        answers.push({ stepNumber: currentStep, answer });
+        hideInputs();
+
+        // Check emergency on any text answer
+        fetch('/Consultation/NextStep', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentStep: currentStep, answer: answer })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.isEmergency) {
+                showEmergency(data.message);
+                return;
+            }
+            if (data.isComplete) {
+                setTimeout(showSummary, 400);
+                return;
+            }
+            setTimeout(() => {
+                appendBotMessage(data.step.question);
+                currentStep = data.step.stepNumber;
+                updateProgress(currentStep);
+                if (data.step.inputType === 'buttons') {
+                    showButtonInput(data.step.options);
+                } else {
+                    showTextInput(data.step.placeholder ?? 'Type your answer...');
+                }
+            }, 500);
+        });
+    }
+
+    function showSummary() {
+        hideInputs();
+        appendBotMessage("Thank you! Here's a summary of what you've shared:");
+
+        // Build summary in chat
+        const summaryLines = answers.map(a => `<strong>Q:</strong> ${getQuestionForStep(a.stepNumber)}<br><strong>A:</strong> ${a.answer}`).join('<br><br>');
+        appendBotMessageHtml(`<div class="space-y-2 text-sm">${summaryLines}</div>`);
+
+        setTimeout(() => {
+            appendBotMessage("Does everything look correct? If yes, I'll send this to a pharmacist for review.");
+
+            // Show confirm/restart buttons
+            const area = document.getElementById('buttonInput');
+            area.innerHTML = `
+                <button onclick="confirmSubmit()" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">send</span>
+                    Submit to Pharmacist
+                </button>
+                <button onclick="restartChat()" class="border border-[#e5e7eb] dark:border-[#2d3a4b] font-semibold py-3 px-5 rounded-xl hover:bg-[#f9fafb] dark:hover:bg-[#2d3a4b] transition-all text-sm">
+                    Start Over
+                </button>
+            `;
+            area.classList.remove('hidden');
+            area.classList.add('flex');
+        }, 600);
+    }
+
+    function confirmSubmit() {
+        document.getElementById('answersJson').value = JSON.stringify(answers);
+        document.getElementById('submitForm').submit();
+    }
+
+    function restartChat() {
+        answers.length = 0;
+        currentStep = 0;
+        document.getElementById('chatWindow').innerHTML = '';
+        window.onload();
+    }
+
+    function getQuestionForStep(step) {
+        const questions = {
+            1: "Main complaint",
+            2: "Duration",
+            3: "Severity",
+            4: "Better or worse",
+            5: "Current medications",
+            6: "Additional info"
+        };
+        return questions[step] ?? `Step ${step}`;
+    }
+
+    function showEmergency(message) {
+        hideInputs();
+        const chatWindow = document.getElementById('chatWindow');
+        const div = document.createElement('div');
+        div.className = 'bg-red-50 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-xl p-4';
+        div.innerHTML = `
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-500 text-2xl">emergency</span>
+                <div>
+                    <p class="font-bold text-red-700 dark:text-red-400 mb-1">Emergency Detected</p>
+                    <p class="text-sm text-red-600 dark:text-red-300">${message}</p>
+                </div>
+            </div>
+        `;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // ── UI Helpers ──────────────────────────────────────
+
+    function showTextInput(placeholder) {
+        document.getElementById('userTextInput').placeholder = placeholder;
+        document.getElementById('textInput').classList.remove('hidden');
+        document.getElementById('textInput').classList.add('flex');
+        document.getElementById('buttonInput').classList.add('hidden');
+        setTimeout(() => document.getElementById('userTextInput').focus(), 100);
+    }
+
+    function showButtonInput(options) {
+        const area = document.getElementById('buttonInput');
+        area.innerHTML = options.map(opt =>
+            `<button onclick="handleAnswer('${opt}')"
+                class="border border-primary text-primary font-semibold py-2 px-4 rounded-xl hover:bg-primary hover:text-white transition-all text-sm">
+                ${opt}
+            </button>`
+        ).join('');
+        area.classList.remove('hidden');
+        area.classList.add('flex');
+        document.getElementById('textInput').classList.add('hidden');
+        document.getElementById('textInput').classList.remove('flex');
+    }
+
+    function hideInputs() {
+        document.getElementById('textInput').classList.add('hidden');
+        document.getElementById('textInput').classList.remove('flex');
+        document.getElementById('buttonInput').classList.add('hidden');
+        document.getElementById('buttonInput').classList.remove('flex');
+    }
+
+    function appendBotMessage(text) {
+        const chatWindow = document.getElementById('chatWindow');
+        const div = document.createElement('div');
+        div.className = 'flex justify-start gap-2';
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                <span class="material-symbols-outlined text-primary text-base">medical_services</span>
+            </div>
+            <div class="max-w-[80%] bg-[#f3f4f6] dark:bg-[#2d3a4b] rounded-2xl rounded-tl-none px-4 py-3 text-sm leading-relaxed">${escapeHtml(text)}</div>
+        `;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function appendBotMessageHtml(html) {
+        const chatWindow = document.getElementById('chatWindow');
+        const div = document.createElement('div');
+        div.className = 'flex justify-start gap-2';
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                <span class="material-symbols-outlined text-primary text-base">medical_services</span>
+            </div>
+            <div class="max-w-[80%] bg-[#f3f4f6] dark:bg-[#2d3a4b] rounded-2xl rounded-tl-none px-4 py-3 text-sm leading-relaxed">${html}</div>
+        `;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function appendUserMessage(text) {
+        const chatWindow = document.getElementById('chatWindow');
+        const div = document.createElement('div');
+        div.className = 'flex justify-end';
+        div.innerHTML = `
+            <div class="max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-none px-4 py-3 text-sm leading-relaxed">${escapeHtml(text)}</div>
+        `;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function updateProgress(step) {
+        const pct = Math.round(((step - 1) / totalSteps) * 100);
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressPercent').textContent = pct + '%';
+        document.getElementById('currentStepLabel').textContent = step;
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    }
+</script>
+}

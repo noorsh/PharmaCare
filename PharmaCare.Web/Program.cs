@@ -56,6 +56,7 @@ builder.Services.AddScoped<IMedicalHistoryRepository, MedicalHistoryRepository>(
 builder.Services.AddScoped<IAllergyRepository, AllergyRepository>();
 builder.Services.AddScoped<ICurrentMedicationRepository, CurrentMedicationRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IConsultationRepository, ConsultationRepository>();
 
 
 // Services
@@ -65,6 +66,9 @@ builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
 builder.Services.AddScoped<IAllergyService, AllergyService>();
 builder.Services.AddScoped<ICurrentMedicationService, CurrentMedicationService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IConsultationService, ConsultationService>();
+builder.Services.AddScoped<IAIAssessmentService, AIAssessmentService>();
+builder.Services.AddScoped<ConsultationChatService>();
 
 var app = builder.Build();
 

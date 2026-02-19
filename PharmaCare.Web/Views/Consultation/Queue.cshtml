@@ -1,0 +1,143 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.PharmacistQueueViewModel
+@{
+    ViewData["Title"] = "Consultation Queue";
+    Layout = "_LayoutAuth";
+}
+
+<div class="mb-8">
+    <h2 class="text-3xl font-black tracking-tight">Consultation Queue</h2>
+    <p class="text-[#617789] dark:text-[#94a3b8] mt-1">Review and respond to patient consultations</p>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-yellow-500 bg-yellow-50 dark:bg-yellow-500/10 p-2 rounded-lg">schedule</span>
+            <div>
+                <p class="text-xs text-[#617789] font-medium">Awaiting Review</p>
+                <p class="text-2xl font-black">@Model.TotalPending</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-blue-500 bg-blue-50 dark:bg-blue-500/10 p-2 rounded-lg">visibility</span>
+            <div>
+                <p class="text-xs text-[#617789] font-medium">Under Review</p>
+                <p class="text-2xl font-black">@Model.TotalUnderReview</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-green-500 bg-green-50 dark:bg-green-500/10 p-2 rounded-lg">check_circle</span>
+            <div>
+                <p class="text-xs text-[#617789] font-medium">Recently Completed</p>
+                <p class="text-2xl font-black">@Model.RecentlyCompleted.Count()</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending -->
+<div class="mb-8">
+    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined text-yellow-500">schedule</span>
+        Pending Consultations
+    </h3>
+    @if (!Model.PendingConsultations.Any())
+    {
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-8 text-center text-[#617789]">
+            <span class="material-symbols-outlined text-4xl">done_all</span>
+            <p class="mt-2 font-medium">All caught up! No pending consultations.</p>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-3">
+            @foreach (var c in Model.PendingConsultations)
+            {
+                <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-l-4 border-yellow-400 border-[#e5e7eb] dark:border-[#2d3a4b] p-5 flex justify-between items-center gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-bold text-[#617789]">#@c.ConsultationId</span>
+                            <span class="text-sm font-semibold">@(c.Patient?.User?.FirstName ?? "Patient")</span>
+                            @if (!string.IsNullOrEmpty(c.SymptomSeverity))
+                            {
+                                var sc = c.SymptomSeverity == "Severe" ? "text-red-500" : c.SymptomSeverity == "Moderate" ? "text-yellow-500" : "text-green-500";
+                                <span class="text-xs font-bold @sc">@c.SymptomSeverity</span>
+                            }
+                        </div>
+                        <p class="text-sm text-[#617789] truncate">@c.Symptoms</p>
+                        <p class="text-xs text-[#617789] mt-1">@c.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
+                    </div>
+                    <form asp-action="Assign" asp-route-id="@c.ConsultationId" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit"
+                            class="bg-primary hover:bg-primary/90 text-white text-sm font-bold py-2 px-4 rounded-lg transition-all whitespace-nowrap">
+                            Take & Review
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Under Review -->
+@if (Model.UnderReviewConsultations.Any())
+{
+    <div class="mb-8">
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-500">visibility</span>
+            Under Review
+        </h3>
+        <div class="space-y-3">
+            @foreach (var c in Model.UnderReviewConsultations)
+            {
+                <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-l-4 border-blue-400 border-[#e5e7eb] dark:border-[#2d3a4b] p-5 flex justify-between items-center gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-bold text-[#617789]">#@c.ConsultationId</span>
+                            <span class="text-sm font-semibold">@(c.Patient?.User?.FirstName ?? "Patient")</span>
+                        </div>
+                        <p class="text-sm text-[#617789] truncate">@c.Symptoms</p>
+                    </div>
+                    <a asp-action="Review" asp-route-id="@c.ConsultationId"
+                       class="border border-primary text-primary text-sm font-bold py-2 px-4 rounded-lg hover:bg-primary/5 transition-all whitespace-nowrap">
+                        Continue Review
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Recently Completed -->
+@if (Model.RecentlyCompleted.Any())
+{
+    <div>
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-green-500">check_circle</span>
+            Recently Completed
+        </h3>
+        <div class="space-y-3">
+            @foreach (var c in Model.RecentlyCompleted)
+            {
+                <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5 flex justify-between items-center gap-4 opacity-75">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-bold text-[#617789]">#@c.ConsultationId</span>
+                            <span class="text-sm font-semibold">@(c.Patient?.User?.FirstName ?? "Patient")</span>
+                        </div>
+                        <p class="text-sm text-[#617789] truncate">@c.Symptoms</p>
+                        <p class="text-xs text-green-500 mt-1">Completed @c.CompletedAt?.ToString("MMM dd, HH:mm")</p>
+                    </div>
+                    <a asp-action="Details" asp-route-id="@c.ConsultationId"
+                       class="text-sm text-[#617789] hover:text-primary font-medium">View</a>
+                </div>
+            }
+        </div>
+    </div>
+}
