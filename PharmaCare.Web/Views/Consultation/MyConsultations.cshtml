@@ -1,100 +1,238 @@
-﻿@model IEnumerable<PharmaCare.Data.Models.Consultation>
+﻿@model PharmaCare.MVC.Models.ViewModels.ConsultationHistoryViewModel
 @{
     ViewData["Title"] = "My Consultations";
     Layout = "_LayoutAuth";
 }
 
-<div class="mb-8 flex justify-between items-center">
+<!-- Page Title -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
     <div>
-        <h2 class="text-3xl font-black tracking-tight">My Consultations</h2>
-        <p class="text-[#617789] dark:text-[#94a3b8] mt-1">Track all your consultation requests</p>
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">My Consultations</h2>
+        <p class="text-[#617789] dark:text-slate-400 mt-1">Manage your current and past AI-powered health consultations.</p>
     </div>
     <a asp-action="Start"
-       class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
-        <span class="material-symbols-outlined">add</span>
+       class="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-sm w-fit">
+        <span class="material-symbols-outlined text-lg">add</span>
         New Consultation
     </a>
 </div>
 
-@if (!Model.Any())
+@if (TempData["Error"] != null)
 {
-    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-12 text-center">
-        <span class="material-symbols-outlined text-5xl text-[#617789]">inbox</span>
-        <p class="font-semibold mt-3">No consultations yet</p>
-        <p class="text-sm text-[#617789] mt-1">Start a new consultation to get help from a pharmacist</p>
-        <a asp-action="Start" class="inline-block mt-4 bg-primary text-white font-bold py-2 px-6 rounded-lg text-sm">
-            Start Consultation
-        </a>
+    <div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm font-medium">
+        @TempData["Error"]
     </div>
 }
-else
+@if (TempData["Success"] != null)
 {
-    <div class="space-y-4">
-        @foreach (var consultation in Model)
-        {
-            var statusColor = consultation.Status switch
-            {
-                "Pending" => "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400",
-                "UnderReview" => "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
-                "Completed" => "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
-                "Cancelled" => "bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
-                _ => "bg-gray-100 text-gray-600"
-            };
-            var statusIcon = consultation.Status switch
-            {
-                "Pending" => "schedule",
-                "UnderReview" => "visibility",
-                "Completed" => "check_circle",
-                "Cancelled" => "cancel",
-                _ => "help"
-            };
+    <div class="mb-6 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 px-4 py-3 rounded-lg text-sm font-medium">
+        @TempData["Success"]
+    </div>
+}
 
-            <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start gap-4">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-3 mb-2">
-                            <span class="text-xs font-bold text-[#617789]">#@consultation.ConsultationId</span>
-                            <span class="@statusColor text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
-                                <span class="material-symbols-outlined text-xs">@statusIcon</span>
-                                @consultation.Status
-                            </span>
-                            @if (!string.IsNullOrEmpty(consultation.SymptomSeverity))
-                            {
-                                var severityColor = consultation.SymptomSeverity == "Severe" ? "text-red-500" :
-                                                   consultation.SymptomSeverity == "Moderate" ? "text-yellow-500" : "text-green-500";
-                                <span class="text-xs font-semibold @severityColor">@consultation.SymptomSeverity</span>
-                            }
-                        </div>
-                        <p class="text-sm font-medium truncate">@consultation.Symptoms</p>
-                        <div class="flex gap-4 mt-2 text-xs text-[#617789]">
-                            <span>Submitted @consultation.CreatedAt.ToString("MMM dd, yyyy")</span>
-                            @if (!string.IsNullOrEmpty(consultation.SymptomDuration))
-                            {
-                                <span>Duration: @consultation.SymptomDuration</span>
-                            }
-                            @if (consultation.CompletedAt.HasValue)
-                            {
-                                <span>Completed @consultation.CompletedAt.Value.ToString("MMM dd, yyyy")</span>
-                            }
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <a asp-action="Details" asp-route-id="@consultation.ConsultationId"
-                           class="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
-                            View
-                            <span class="material-symbols-outlined text-base">arrow_forward</span>
-                        </a>
-                        @if (consultation.Status == "Pending")
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] border-l-4 border-l-primary shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-[#617789] text-xs font-semibold uppercase tracking-wider">Total Consultations</span>
+            <span class="material-symbols-outlined text-primary/60">analytics</span>
+        </div>
+        <span class="text-4xl font-black text-slate-900 dark:text-white">@Model.TotalConsultations</span>
+    </div>
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] border-l-4 border-l-amber-500 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-[#617789] text-xs font-semibold uppercase tracking-wider">Pending Review</span>
+            <span class="material-symbols-outlined text-amber-500/60">pending_actions</span>
+        </div>
+        <span class="text-4xl font-black text-slate-900 dark:text-white">@Model.PendingCount</span>
+    </div>
+    <div class="bg-white dark:bg-[#1a2632] p-6 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] border-l-4 border-l-emerald-500 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-[#617789] text-xs font-semibold uppercase tracking-wider">Completed</span>
+            <span class="material-symbols-outlined text-emerald-500/60">check_circle</span>
+        </div>
+        <span class="text-4xl font-black text-slate-900 dark:text-white">@Model.CompletedCount</span>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl p-3 mb-8 shadow-sm flex flex-col md:flex-row items-center gap-4">
+    <form method="get" asp-action="MyConsultations" class="relative w-full md:flex-1">
+        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#617789]">search</span>
+        <input name="search"
+               value="@Model.SearchQuery"
+               type="text"
+               placeholder="Search by ID or symptoms..."
+               class="w-full pl-12 pr-4 py-2.5 bg-slate-50 dark:bg-[#101a22] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-[#617789]" />
+        @if (!string.IsNullOrEmpty(Model.StatusFilter))
+        {
+            <input type="hidden" name="status" value="@Model.StatusFilter" />
+        }
+    </form>
+    <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
+        @foreach (var f in new[] { ((string?)null, "All"), ("Pending", "Pending"), ("Completed", "Completed"), ("Cancelled", "Cancelled") })
+        {
+            var isActive = f.Item1 == null
+                ? string.IsNullOrEmpty(Model.StatusFilter)
+                : Model.StatusFilter == f.Item1;
+            <a asp-action="MyConsultations"
+               asp-route-status="@f.Item1"
+               asp-route-search="@Model.SearchQuery"
+               class="px-5 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors
+                      @(isActive ? "bg-primary text-white" : "text-[#617789] hover:bg-slate-100 dark:hover:bg-[#101a22]")">
+                @f.Item2
+            </a>
+        }
+    </div>
+</div>
+
+<!-- Cards -->
+<div class="space-y-4">
+    @if (!Model.Consultations.Any())
+    {
+        <div class="py-20 text-center bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b]">
+            <div class="bg-slate-100 dark:bg-[#101a22] rounded-full size-20 flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-outlined text-[#617789] text-4xl">search_off</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">No consultations found</h3>
+            <p class="text-[#617789] mt-1 text-sm">Try adjusting your filters or start a new health consultation.</p>
+            <a asp-action="Start"
+               class="inline-flex items-center gap-2 mt-6 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-primary/90 transition-all">
+                <span class="material-symbols-outlined text-lg">add</span> Start Consultation
+            </a>
+        </div>
+    }
+    else
+    {
+        @foreach (var c in Model.Consultations)
+        {
+            var borderColor = c.HasUrgentFlag ? "border-l-red-500"
+                : c.Status == "Completed" ? "border-l-emerald-500"
+                : c.Status == "Cancelled"  ? "border-l-slate-400"
+                : "border-l-amber-500";
+
+            var severityIcon = c.SymptomSeverity == "Severe" ? "priority_high"
+                : c.SymptomSeverity == "Moderate" ? "warning"
+                : "info";
+
+            <div class="bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] border-l-4 @borderColor rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+
+                <!-- Info -->
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="text-xs font-bold text-[#617789] tracking-wider">#PC-@c.ConsultationId.ToString("D4")</span>
+                        @if (c.HasUrgentFlag)
                         {
-                            <form asp-action="Cancel" asp-route-id="@consultation.ConsultationId" method="post"
-                                  onsubmit="return confirm('Cancel this consultation?')">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="text-xs text-red-500 hover:underline font-medium">Cancel</button>
-                            </form>
+                            <span class="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest">
+                                Urgent AI Flag
+                            </span>
+                        }
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight truncate">@c.Symptoms</h3>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        @if (!string.IsNullOrEmpty(c.SymptomDuration))
+                        {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-[#101a22] text-[#617789] text-xs font-semibold rounded-lg">
+                                <span class="material-symbols-outlined text-sm">schedule</span> @c.SymptomDuration
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(c.SymptomSeverity))
+                        {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1
+                                         bg-@(c.SeverityBadgeColor)-100 dark:bg-@(c.SeverityBadgeColor)-900/30
+                                         text-@(c.SeverityBadgeColor)-700 dark:text-@(c.SeverityBadgeColor)-400
+                                         text-xs font-bold rounded-lg">
+                                <span class="material-symbols-outlined text-sm">@severityIcon</span>
+                                @c.SymptomSeverity
+                            </span>
                         }
                     </div>
                 </div>
+
+                <!-- Date -->
+                <div class="text-sm text-[#617789] flex flex-col items-start md:items-center min-w-[130px] shrink-0">
+                    <span class="font-medium">Submitted on</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300">@c.CreatedAt.ToString("MMM dd, yyyy")</span>
+                </div>
+
+                <!-- Status + Actions -->
+                <div class="flex items-center gap-4 w-full md:w-auto border-t border-[#e5e7eb] dark:border-[#2d3a4b] md:border-t-0 pt-4 md:pt-0 shrink-0">
+                    <div class="bg-@(c.StatusBadgeColor)-100 dark:bg-@(c.StatusBadgeColor)-900/30
+                                text-@(c.StatusBadgeColor)-700 dark:text-@(c.StatusBadgeColor)-400
+                                px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 whitespace-nowrap">
+                        <span class="size-1.5 rounded-full bg-@(c.StatusBadgeColor)-500 inline-block"></span>
+                        @c.StatusLabel
+                    </div>
+
+                    <a asp-action="Details" asp-route-id="@c.ConsultationId"
+                       class="flex items-center gap-1 text-primary text-sm font-bold hover:underline whitespace-nowrap">
+                        View Details <span class="material-symbols-outlined text-lg">chevron_right</span>
+                    </a>
+
+                    @if (c.Status == "Pending")
+                    {
+                        <form asp-action="Cancel" asp-route-id="@c.ConsultationId" method="post"
+                              onsubmit="return confirm('Cancel this consultation?')">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-bold whitespace-nowrap">
+                                Cancel
+                            </button>
+                        </form>
+                    }
+                </div>
             </div>
         }
+    }
+</div>
+
+<!-- Pagination -->
+@if (Model.TotalPages > 1)
+{
+    <div class="mt-10 flex items-center justify-between border-t border-[#e5e7eb] dark:border-[#2d3a4b] pt-6">
+        <p class="text-sm text-[#617789]">
+            Showing <span class="font-bold text-slate-900 dark:text-white">@((Model.CurrentPage - 1) * Model.PageSize + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalResults)</span>
+            of <span class="font-bold text-slate-900 dark:text-white">@Model.TotalResults</span> results
+        </p>
+        <div class="flex items-center gap-2">
+            @if (Model.CurrentPage > 1)
+            {
+                <a asp-action="MyConsultations" asp-route-page="@(Model.CurrentPage - 1)"
+                   asp-route-status="@Model.StatusFilter" asp-route-search="@Model.SearchQuery"
+                   class="p-2 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] hover:bg-slate-50 dark:hover:bg-[#101a22] transition-colors">
+                    <span class="material-symbols-outlined text-lg">chevron_left</span>
+                </a>
+            }
+            else
+            {
+                <button disabled class="p-2 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] opacity-40 cursor-not-allowed">
+                    <span class="material-symbols-outlined text-lg">chevron_left</span>
+                </button>
+            }
+
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <a asp-action="MyConsultations" asp-route-page="@i"
+                   asp-route-status="@Model.StatusFilter" asp-route-search="@Model.SearchQuery"
+                   class="size-9 rounded-lg font-bold text-sm flex items-center justify-center transition-colors
+                          @(i == Model.CurrentPage ? "bg-primary/10 text-primary" : "text-[#617789] hover:bg-slate-100 dark:hover:bg-[#101a22]")">
+                    @i
+                </a>
+            }
+
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <a asp-action="MyConsultations" asp-route-page="@(Model.CurrentPage + 1)"
+                   asp-route-status="@Model.StatusFilter" asp-route-search="@Model.SearchQuery"
+                   class="p-2 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] hover:bg-slate-50 dark:hover:bg-[#101a22] transition-colors">
+                    <span class="material-symbols-outlined text-lg">chevron_right</span>
+                </a>
+            }
+            else
+            {
+                <button disabled class="p-2 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] opacity-40 cursor-not-allowed">
+                    <span class="material-symbols-outlined text-lg">chevron_right</span>
+                </button>
+            }
+        </div>
     </div>
 }

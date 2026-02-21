@@ -118,26 +118,81 @@ namespace PharmaCare.MVC.Controllers
         }
 
         // GET: Consultation/MyConsultations
-        [Authorize(Roles = "Patient")]
-        public async Task<IActionResult> MyConsultations()
+[Authorize(Roles = "Patient")]
+public async Task<IActionResult> MyConsultations(string? status, string? search, int page = 1)
+{
+    try
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var patient = await _patientService.GetPatientByUserIdAsync(userId);
+        if (patient == null) return NotFound();
+
+        var all = await _consultationService.GetConsultationsByPatientWithDetailsAsync(patient.PatientId);
+
+        // Stats — always from full unfiltered list
+        var totalConsultations = all.Count();
+        var pendingCount = all.Count(c => c.Status == "Pending" || c.Status == "UnderReview");
+        var completedCount = all.Count(c => c.Status == "Completed");
+
+        // Apply filters
+        var filtered = all.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(status) && status != "All")
         {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var patient = await _patientService.GetPatientByUserIdAsync(userId);
-
-                if (patient == null) return NotFound();
-
-                var consultations = await _consultationService.GetConsultationsByPatientWithDetailsAsync(patient.PatientId);
-                return View(consultations);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading patient consultations");
-                TempData["Error"] = "An error occurred while loading your consultations.";
-                return View(new List<Consultation>());
-            }
+            filtered = status == "Pending"
+                ? filtered.Where(c => c.Status == "Pending" || c.Status == "UnderReview")
+                : filtered.Where(c => c.Status == status);
         }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            filtered = filtered.Where(c =>
+                c.ConsultationId.ToString().Contains(q) ||
+                c.Symptoms.ToLower().Contains(q));
+        }
+
+        var filteredList = filtered.OrderByDescending(c => c.CreatedAt).ToList();
+        const int pageSize = 8;
+        var totalResults = filteredList.Count;
+
+        var paged = filteredList
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new ConsultationSummary
+            {
+                ConsultationId  = c.ConsultationId,
+                Symptoms        = c.Symptoms,
+                SymptomDuration = c.SymptomDuration,
+                SymptomSeverity = c.SymptomSeverity,
+                Status          = c.Status,
+                CreatedAt       = c.CreatedAt,
+                CompletedAt     = c.CompletedAt,
+                HasUrgentFlag   = c.SymptomSeverity == "Severe"
+            });
+
+        var viewModel = new ConsultationHistoryViewModel
+        {
+            TotalConsultations = totalConsultations,
+            PendingCount       = pendingCount,
+            CompletedCount     = completedCount,
+            StatusFilter       = status,
+            SearchQuery        = search,
+            CurrentPage        = page,
+            PageSize           = pageSize,
+            TotalResults       = totalResults,
+            Consultations      = paged
+        };
+
+        return View(viewModel);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error loading patient consultations");
+        TempData["Error"] = "An error occurred while loading your consultations.";
+        return View(new ConsultationHistoryViewModel());
+    }
+}
 
         // GET: Consultation/Details/5
         public async Task<IActionResult> Details(int id)
