@@ -35,6 +35,17 @@ Layout = "_LandingLayout";
                     </button>
                 </form>
             }
+            else if (User.Identity?.IsAuthenticated == true && User.IsInRole("Pharmacist"))
+            {
+                <a asp-controller="Pharmacist" asp-action="Dashboard" class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
+                    Dashboard
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button  class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">
+                        Logout
+                    </button>
+                </form>
+            }
             else 
             {
             <a asp-controller="Account" asp-action="Login" class="text-sm font-semibold text-gray-700 hover:text-primary transition-colors">

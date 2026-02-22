@@ -160,24 +160,32 @@
                     <span>Consultation History</span>
                 </a>
             }
-            else if (User.IsInRole("Pharmacist"))
-            {
-                <a asp-controller="Pharmacist" asp-action="Dashboard" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span>Dashboard</span>
-                </a>
-                <a asp-controller="Consultation" asp-action="Pending" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Pending" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-                    <span class="material-symbols-outlined">pending_actions</span>
-                    <span>Pending Consultations</span>
-                </a>
-                <a asp-controller="Patient" asp-action="List" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "List" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-                    <span class="material-symbols-outlined">group</span>
-                    <span>Patients</span>
-                </a>
-            }
+          else if (User.IsInRole("Pharmacist"))
+{
+    <a asp-controller="Pharmacist" asp-action="Dashboard"
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Pharmacist" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>Dashboard</span>
+    </a>
+
+    <a asp-controller="Consultation" asp-action="Queue"
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "Queue" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+        <span class="material-symbols-outlined">pending_actions</span>
+        <span>Consultation Queue</span>
+    </a>
+
+    <a asp-controller="Consultation" asp-action="History"
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+        <span class="material-symbols-outlined">history</span>
+        <span>Consultation History</span>
+    </a>
+
+    <a asp-controller="Patient" asp-action="List"
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Patient" && ViewContext.RouteData.Values["action"]?.ToString() == "List" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+        <span class="material-symbols-outlined">group</span>
+        <span>Patients</span>
+    </a>
+}
             else if (User.IsInRole("Admin"))
             {
                 <a asp-controller="Admin" asp-action="Dashboard" 

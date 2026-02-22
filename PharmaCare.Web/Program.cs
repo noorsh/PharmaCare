@@ -57,6 +57,7 @@ builder.Services.AddScoped<IAllergyRepository, AllergyRepository>();
 builder.Services.AddScoped<ICurrentMedicationRepository, CurrentMedicationRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IConsultationRepository, ConsultationRepository>();
+builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 
 
 // Services
@@ -69,6 +70,7 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IConsultationService, ConsultationService>();
 builder.Services.AddScoped<IAIAssessmentService, AIAssessmentService>();
 builder.Services.AddScoped<ConsultationChatService>();
+builder.Services.AddScoped<IMedicationService, MedicationService>();
 
 var app = builder.Build();
 

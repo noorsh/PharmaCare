@@ -24,5 +24,8 @@ namespace PharmaCare.Services.Interfaces
         Task<bool> CompleteConsultationAsync(int consultationId, string pharmacistId);
         Task<bool> CancelConsultationAsync(int consultationId);
         Task<IEnumerable<Consultation>> GetConsultationsByPharmacistAsync(string pharmacistId);
+        
+        Task<IEnumerable<Consultation>> GetRecentConsultationsWithDetailsAsync(int count = 10);
+        Task<bool> SubmitRecommendationAsync(int consultationId, string pharmacistId, Recommendation recommendation);
     }
 }

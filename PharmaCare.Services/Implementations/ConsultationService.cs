@@ -195,141 +195,186 @@ namespace PharmaCare.Services.Implementations
     }
 }
 
-public async Task<IEnumerable<Consultation>> GetConsultationsByPatientWithDetailsAsync(int patientId)
-{
-    try
-    {
-        return await _consultationRepository.GetConsultationsByPatientWithDetailsAsync(patientId);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, $"Error retrieving consultation details for patient {patientId}");
-        throw;
-    }
-}
-
-public async Task<IEnumerable<Consultation>> GetPendingConsultationsWithDetailsAsync()
-{
-    try
-    {
-        return await _consultationRepository.GetPendingConsultationsWithDetailsAsync();
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error retrieving pending consultations with details");
-        throw;
-    }
-}
-
-public async Task<bool> AssignPharmacistAsync(int consultationId, string pharmacistId)
-{
-    try
-    {
-        var consultation = await _consultationRepository.GetByIdAsync(consultationId);
-        if (consultation == null)
+        public async Task<IEnumerable<Consultation>> GetConsultationsByPatientWithDetailsAsync(int patientId)
         {
-            _logger.LogWarning($"Consultation {consultationId} not found for pharmacist assignment");
-            return false;
+            try
+            {
+                return await _consultationRepository.GetConsultationsByPatientWithDetailsAsync(patientId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving consultation details for patient {patientId}");
+                throw;
+            }
         }
 
-        if (consultation.Status != "Pending")
+        public async Task<IEnumerable<Consultation>> GetPendingConsultationsWithDetailsAsync()
         {
-            _logger.LogWarning($"Consultation {consultationId} is not in Pending status, cannot assign pharmacist");
-            return false;
+            try
+            {
+                return await _consultationRepository.GetPendingConsultationsWithDetailsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving pending consultations with details");
+                throw;
+            }
         }
 
-        consultation.PharmacistId = pharmacistId;
-        consultation.Status = "UnderReview";
-        consultation.ReviewedAt = DateTime.UtcNow;
-
-        _consultationRepository.Update(consultation);
-        await _consultationRepository.SaveChangesAsync();
-
-        _logger.LogInformation($"Pharmacist {pharmacistId} assigned to consultation {consultationId}");
-        return true;
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, $"Error assigning pharmacist to consultation {consultationId}");
-        throw new InvalidOperationException("An error occurred while assigning the pharmacist.", ex);
-    }
-}
-
-public async Task<bool> CompleteConsultationAsync(int consultationId, string pharmacistId)
-{
-    try
-    {
-        var consultation = await _consultationRepository.GetByIdAsync(consultationId);
-        if (consultation == null)
+        public async Task<bool> AssignPharmacistAsync(int consultationId, string pharmacistId)
         {
-            _logger.LogWarning($"Consultation {consultationId} not found for completion");
-            return false;
+            try
+            {
+                var consultation = await _consultationRepository.GetByIdAsync(consultationId);
+                if (consultation == null)
+                {
+                    _logger.LogWarning($"Consultation {consultationId} not found for pharmacist assignment");
+                    return false;
+                }
+
+                if (consultation.Status != "Pending")
+                {
+                    _logger.LogWarning($"Consultation {consultationId} is not in Pending status, cannot assign pharmacist");
+                    return false;
+                }
+
+                consultation.PharmacistId = pharmacistId;
+                consultation.Status = "UnderReview";
+                consultation.ReviewedAt = DateTime.UtcNow;
+
+                _consultationRepository.Update(consultation);
+                await _consultationRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"Pharmacist {pharmacistId} assigned to consultation {consultationId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error assigning pharmacist to consultation {consultationId}");
+                throw new InvalidOperationException("An error occurred while assigning the pharmacist.", ex);
+            }
         }
 
-        if (consultation.PharmacistId != pharmacistId)
+        public async Task<bool> CompleteConsultationAsync(int consultationId, string pharmacistId)
         {
-            _logger.LogWarning($"Pharmacist {pharmacistId} is not assigned to consultation {consultationId}");
-            return false;
+            try
+            {
+                var consultation = await _consultationRepository.GetByIdAsync(consultationId);
+                if (consultation == null)
+                {
+                    _logger.LogWarning($"Consultation {consultationId} not found for completion");
+                    return false;
+                }
+
+                if (consultation.PharmacistId != pharmacistId)
+                {
+                    _logger.LogWarning($"Pharmacist {pharmacistId} is not assigned to consultation {consultationId}");
+                    return false;
+                }
+
+                consultation.Status = "Completed";
+                consultation.CompletedAt = DateTime.UtcNow;
+
+                _consultationRepository.Update(consultation);
+                await _consultationRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"Consultation {consultationId} completed by pharmacist {pharmacistId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error completing consultation {consultationId}");
+                throw new InvalidOperationException("An error occurred while completing the consultation.", ex);
+            }
         }
 
-        consultation.Status = "Completed";
-        consultation.CompletedAt = DateTime.UtcNow;
-
-        _consultationRepository.Update(consultation);
-        await _consultationRepository.SaveChangesAsync();
-
-        _logger.LogInformation($"Consultation {consultationId} completed by pharmacist {pharmacistId}");
-        return true;
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, $"Error completing consultation {consultationId}");
-        throw new InvalidOperationException("An error occurred while completing the consultation.", ex);
-    }
-}
-
-public async Task<bool> CancelConsultationAsync(int consultationId)
-{
-    try
-    {
-        var consultation = await _consultationRepository.GetByIdAsync(consultationId);
-        if (consultation == null)
+        public async Task<bool> CancelConsultationAsync(int consultationId)
         {
-            _logger.LogWarning($"Consultation {consultationId} not found for cancellation");
-            return false;
+            try
+            {
+                var consultation = await _consultationRepository.GetByIdAsync(consultationId);
+                if (consultation == null)
+                {
+                    _logger.LogWarning($"Consultation {consultationId} not found for cancellation");
+                    return false;
+                }
+
+                if (consultation.Status == "Completed")
+                {
+                    _logger.LogWarning($"Cannot cancel completed consultation {consultationId}");
+                    return false;
+                }
+
+                consultation.Status = "Cancelled";
+                _consultationRepository.Update(consultation);
+                await _consultationRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"Consultation {consultationId} cancelled");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error cancelling consultation {consultationId}");
+                throw new InvalidOperationException("An error occurred while cancelling the consultation.", ex);
+            }
         }
 
-        if (consultation.Status == "Completed")
+        public async Task<IEnumerable<Consultation>> GetConsultationsByPharmacistAsync(string pharmacistId)
+    {
+        try
         {
-            _logger.LogWarning($"Cannot cancel completed consultation {consultationId}");
-            return false;
+            return await _consultationRepository.GetConsultationsByPharmacistAsync(pharmacistId);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error retrieving consultations for pharmacist {pharmacistId}");
+            throw;
+        }
+    }
+        
+        public async Task<bool> SubmitRecommendationAsync(int consultationId, string pharmacistId, Recommendation recommendation)
+        {
+            try
+            {
+                var consultation = await _consultationRepository.GetByIdAsync(consultationId);
+                if (consultation == null || consultation.PharmacistId != pharmacistId)
+                {
+                    _logger.LogWarning($"Cannot submit recommendation: consultation {consultationId} not found or not assigned to pharmacist {pharmacistId}");
+                    return false;
+                }
 
-        consultation.Status = "Cancelled";
-        _consultationRepository.Update(consultation);
-        await _consultationRepository.SaveChangesAsync();
+                recommendation.ConsultationId = consultationId;
+                recommendation.PharmacistId = pharmacistId;
+                recommendation.CreatedAt = DateTime.UtcNow;
 
-        _logger.LogInformation($"Consultation {consultationId} cancelled");
-        return true;
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, $"Error cancelling consultation {consultationId}");
-        throw new InvalidOperationException("An error occurred while cancelling the consultation.", ex);
-    }
-}
+                await _consultationRepository.AddRecommendationAsync(recommendation);
 
-public async Task<IEnumerable<Consultation>> GetConsultationsByPharmacistAsync(string pharmacistId)
-{
-    try
-    {
-        return await _consultationRepository.GetConsultationsByPharmacistAsync(pharmacistId);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, $"Error retrieving consultations for pharmacist {pharmacistId}");
-        throw;
-    }
-}
+                consultation.Status = "Completed";
+                consultation.CompletedAt = DateTime.UtcNow;
+                _consultationRepository.Update(consultation);
+
+                await _consultationRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"Recommendation submitted for consultation {consultationId} by pharmacist {pharmacistId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error submitting recommendation for consultation {consultationId}");
+                throw new InvalidOperationException("An error occurred while submitting the recommendation.", ex);
+            }
+        }
+        public async Task<IEnumerable<Consultation>> GetRecentConsultationsWithDetailsAsync(int count = 10)
+        {
+            try
+            {
+                return await _consultationRepository.GetRecentWithDetailsAsync(count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving recent consultations with details");
+                throw;
+            }
+        }
     }
 }

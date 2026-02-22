@@ -11,5 +11,6 @@ namespace PharmaCare.Data.Repositories.Interfaces
         Task<Patient?> GetPatientByUserIdAsync(string userId); // Added this
         Task<bool> IsEmailExistsAsync(string email, int? excludePatientId = null);
         Task<bool> IsPhoneExistsAsync(string phone, int? excludePatientId = null);
+        
     }
 }

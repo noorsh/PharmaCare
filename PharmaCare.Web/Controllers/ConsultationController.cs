@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using PharmaCare.Business.Services.Interfaces;
 using PharmaCare.Data.Models;
 using PharmaCare.MVC.Models.ViewModels;
 using PharmaCare.Services.Implementations;
@@ -18,7 +19,7 @@ namespace PharmaCare.MVC.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<ConsultationController> _logger;
         private readonly ConsultationChatService _chatService;
-
+        private readonly IInventoryService _inventoryService;
 
         public ConsultationController(
             IConsultationService consultationService,
@@ -26,7 +27,8 @@ namespace PharmaCare.MVC.Controllers
             IPatientService patientService,
             UserManager<ApplicationUser> userManager,
             ILogger<ConsultationController> logger,
-            ConsultationChatService chatService)
+            ConsultationChatService chatService,
+            IInventoryService inventoryService)
         {
             _consultationService = consultationService;
             _aiAssessmentService = aiAssessmentService;
@@ -34,10 +36,23 @@ namespace PharmaCare.MVC.Controllers
             _userManager = userManager;
             _logger = logger;
             _chatService = chatService;
+            _inventoryService = inventoryService;
         }
 
         // ─── PATIENT ACTIONS ────────────────────────────────────────────
-        
+
+        // GET: Consultation/Start
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> Start()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var patient = await _patientService.GetPatientByUserIdAsync(userId);
+            if (patient == null) return RedirectToAction("Dashboard", "Patient");
+
+            ViewBag.PatientName = patient.User?.FirstName;
+            ViewBag.TotalSteps = _chatService.TotalSteps;
+            return View();
+        }
 
         // POST: Consultation/Start
         [HttpPost]
@@ -59,7 +74,6 @@ namespace PharmaCare.MVC.Controllers
                     return RedirectToAction("Dashboard", "Patient");
                 }
 
-                // Create consultation
                 var consultation = new Consultation
                 {
                     PatientId = patient.PatientId,
@@ -72,11 +86,9 @@ namespace PharmaCare.MVC.Controllers
 
                 var created = await _consultationService.CreateConsultationAsync(consultation);
 
-                // Generate AI assessment (placeholder)
                 var assessment = await _aiAssessmentService.GenerateAssessmentAsync(created);
-                assessment.ConsultationId = created.ConsultationId;
+                await _aiAssessmentService.SaveAssessmentAsync(assessment); // fixed: added await
 
-                // TODO: Save assessment to DB in next step
                 TempData["AssessmentReport"] = assessment.AssessmentReport;
                 TempData["PossibleConditions"] = assessment.PossibleConditions;
                 TempData["RedFlags"] = assessment.RedFlags;
@@ -94,6 +106,93 @@ namespace PharmaCare.MVC.Controllers
             }
         }
 
+        // POST: Consultation/NextStep
+        [HttpPost]
+        [Authorize(Roles = "Patient")]
+        public IActionResult NextStep([FromBody] NextStepRequest request)
+        {
+            if (_chatService.IsEmergency(request.Answer))
+            {
+                return Ok(new
+                {
+                    isEmergency = true,
+                    message = "⚠️ This sounds like a medical emergency. Please call emergency services (140 in Lebanon) or go to the nearest hospital immediately. Do not wait for a pharmacist."
+                });
+            }
+
+            var nextStepNumber = request.CurrentStep + 1;
+
+            if (_chatService.IsLastStep(request.CurrentStep))
+                return Ok(new { isComplete = true });
+
+            var nextStep = _chatService.GetStep(nextStepNumber);
+            if (nextStep == null)
+                return Ok(new { isComplete = true });
+
+            return Ok(new
+            {
+                isComplete = false,
+                isEmergency = false,
+                step = new
+                {
+                    stepNumber = nextStep.StepNumber,
+                    question = nextStep.Question,
+                    inputType = nextStep.InputType,
+                    options = nextStep.Options,
+                    placeholder = nextStep.Placeholder
+                }
+            });
+        }
+
+        // POST: Consultation/SubmitChat
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> SubmitChat(SubmitChatRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var patient = await _patientService.GetPatientByUserIdAsync(userId);
+                if (patient == null) return RedirectToAction("Dashboard", "Patient");
+
+                var answers = System.Text.Json.JsonSerializer.Deserialize<List<StepAnswer>>(request.AnswersJson);
+
+                var mainComplaint = answers?.FirstOrDefault(a => a.StepNumber == 1)?.Answer ?? "";
+                var duration = answers?.FirstOrDefault(a => a.StepNumber == 2)?.Answer;
+                var severity = answers?.FirstOrDefault(a => a.StepNumber == 3)?.Answer ?? "Moderate";
+                var transcript = _chatService.BuildSummary(answers ?? new());
+
+                var consultation = new Consultation
+                {
+                    PatientId = patient.PatientId,
+                    Symptoms = mainComplaint,
+                    SymptomDuration = duration,
+                    SymptomSeverity = severity,
+                    AdditionalInformation = transcript,
+                    Status = "Pending"
+                };
+
+                var created = await _consultationService.CreateConsultationAsync(consultation);
+
+                var assessment = await _aiAssessmentService.GenerateAssessmentAsync(created);
+                await _aiAssessmentService.SaveAssessmentAsync(assessment); // fixed: added await
+
+                TempData["AssessmentReport"] = assessment.AssessmentReport;
+                TempData["PossibleConditions"] = assessment.PossibleConditions;
+                TempData["RedFlags"] = assessment.RedFlags;
+                TempData["ConfidenceScore"] = assessment.ConfidenceScore?.ToString("F0");
+
+                return RedirectToAction(nameof(Confirmation), new { id = created.ConsultationId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting consultation");
+                TempData["Error"] = "An error occurred while submitting. Please try again.";
+                return RedirectToAction(nameof(Start));
+            }
+        }
+
         // GET: Consultation/Confirmation/5
         [Authorize(Roles = "Patient")]
         public async Task<IActionResult> Confirmation(int id)
@@ -101,7 +200,6 @@ namespace PharmaCare.MVC.Controllers
             var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
             if (consultation == null) return NotFound();
 
-            // Verify ownership
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var patient = await _patientService.GetPatientByUserIdAsync(userId);
             if (patient == null || consultation.PatientId != patient.PatientId)
@@ -118,81 +216,79 @@ namespace PharmaCare.MVC.Controllers
         }
 
         // GET: Consultation/MyConsultations
-[Authorize(Roles = "Patient")]
-public async Task<IActionResult> MyConsultations(string? status, string? search, int page = 1)
-{
-    try
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var patient = await _patientService.GetPatientByUserIdAsync(userId);
-        if (patient == null) return NotFound();
-
-        var all = await _consultationService.GetConsultationsByPatientWithDetailsAsync(patient.PatientId);
-
-        // Stats — always from full unfiltered list
-        var totalConsultations = all.Count();
-        var pendingCount = all.Count(c => c.Status == "Pending" || c.Status == "UnderReview");
-        var completedCount = all.Count(c => c.Status == "Completed");
-
-        // Apply filters
-        var filtered = all.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(status) && status != "All")
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> MyConsultations(string? status, string? search, int page = 1)
         {
-            filtered = status == "Pending"
-                ? filtered.Where(c => c.Status == "Pending" || c.Status == "UnderReview")
-                : filtered.Where(c => c.Status == status);
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var q = search.ToLower();
-            filtered = filtered.Where(c =>
-                c.ConsultationId.ToString().Contains(q) ||
-                c.Symptoms.ToLower().Contains(q));
-        }
-
-        var filteredList = filtered.OrderByDescending(c => c.CreatedAt).ToList();
-        const int pageSize = 8;
-        var totalResults = filteredList.Count;
-
-        var paged = filteredList
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(c => new ConsultationSummary
+            try
             {
-                ConsultationId  = c.ConsultationId,
-                Symptoms        = c.Symptoms,
-                SymptomDuration = c.SymptomDuration,
-                SymptomSeverity = c.SymptomSeverity,
-                Status          = c.Status,
-                CreatedAt       = c.CreatedAt,
-                CompletedAt     = c.CompletedAt,
-                HasUrgentFlag   = c.SymptomSeverity == "Severe"
-            });
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var patient = await _patientService.GetPatientByUserIdAsync(userId);
+                if (patient == null) return NotFound();
 
-        var viewModel = new ConsultationHistoryViewModel
-        {
-            TotalConsultations = totalConsultations,
-            PendingCount       = pendingCount,
-            CompletedCount     = completedCount,
-            StatusFilter       = status,
-            SearchQuery        = search,
-            CurrentPage        = page,
-            PageSize           = pageSize,
-            TotalResults       = totalResults,
-            Consultations      = paged
-        };
+                var all = await _consultationService.GetConsultationsByPatientWithDetailsAsync(patient.PatientId);
 
-        return View(viewModel);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error loading patient consultations");
-        TempData["Error"] = "An error occurred while loading your consultations.";
-        return View(new ConsultationHistoryViewModel());
-    }
-}
+                var totalConsultations = all.Count();
+                var pendingCount = all.Count(c => c.Status == "Pending" || c.Status == "UnderReview");
+                var completedCount = all.Count(c => c.Status == "Completed");
+
+                var filtered = all.AsEnumerable();
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "All")
+                {
+                    filtered = status == "Pending"
+                        ? filtered.Where(c => c.Status == "Pending" || c.Status == "UnderReview")
+                        : filtered.Where(c => c.Status == status);
+                }
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var q = search.ToLower();
+                    filtered = filtered.Where(c =>
+                        c.ConsultationId.ToString().Contains(q) ||
+                        c.Symptoms.ToLower().Contains(q));
+                }
+
+                var filteredList = filtered.OrderByDescending(c => c.CreatedAt).ToList();
+                const int pageSize = 8;
+                var totalResults = filteredList.Count;
+
+                var paged = filteredList
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(c => new ConsultationSummary
+                    {
+                        ConsultationId  = c.ConsultationId,
+                        Symptoms        = c.Symptoms,
+                        SymptomDuration = c.SymptomDuration,
+                        SymptomSeverity = c.SymptomSeverity,
+                        Status          = c.Status,
+                        CreatedAt       = c.CreatedAt,
+                        CompletedAt     = c.CompletedAt,
+                        HasUrgentFlag   = c.SymptomSeverity == "Severe"
+                    });
+
+                var viewModel = new ConsultationHistoryViewModel
+                {
+                    TotalConsultations = totalConsultations,
+                    PendingCount       = pendingCount,
+                    CompletedCount     = completedCount,
+                    StatusFilter       = status,
+                    SearchQuery        = search,
+                    CurrentPage        = page,
+                    PageSize           = pageSize,
+                    TotalResults       = totalResults,
+                    Consultations      = paged
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading patient consultations");
+                TempData["Error"] = "An error occurred while loading your consultations.";
+                return View(new ConsultationHistoryViewModel());
+            }
+        }
 
         // GET: Consultation/Details/5
         public async Task<IActionResult> Details(int id)
@@ -200,7 +296,6 @@ public async Task<IActionResult> MyConsultations(string? status, string? search,
             var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
             if (consultation == null) return NotFound();
 
-            // Patients can only see their own
             if (User.IsInRole("Patient"))
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -256,16 +351,15 @@ public async Task<IActionResult> MyConsultations(string? status, string? search,
             {
                 var allPending = await _consultationService.GetPendingConsultationsWithDetailsAsync();
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var myReviewing = await _consultationService.GetConsultationsByPharmacistAsync(userId);
-                var recentCompleted = await _consultationService.GetRecentConsultationsAsync(5);
+                var recentCompleted = await _consultationService.GetRecentConsultationsWithDetailsAsync(5);
 
                 var viewModel = new PharmacistQueueViewModel
                 {
-                    PendingConsultations = allPending.Where(c => c.Status == "Pending"),
+                    PendingConsultations     = allPending.Where(c => c.Status == "Pending"),
                     UnderReviewConsultations = allPending.Where(c => c.Status == "UnderReview"),
-                    RecentlyCompleted = recentCompleted.Where(c => c.Status == "Completed"),
-                    TotalPending = allPending.Count(c => c.Status == "Pending"),
-                    TotalUnderReview = allPending.Count(c => c.Status == "UnderReview")
+                    RecentlyCompleted        = recentCompleted.Where(c => c.Status == "Completed"),
+                    TotalPending             = allPending.Count(c => c.Status == "Pending"),
+                    TotalUnderReview         = allPending.Count(c => c.Status == "UnderReview")
                 };
 
                 return View(viewModel);
@@ -310,19 +404,105 @@ public async Task<IActionResult> MyConsultations(string? status, string? search,
         [Authorize(Roles = "Pharmacist,Admin")]
         public async Task<IActionResult> Review(int id)
         {
-            var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
-            if (consultation == null) return NotFound();
-
-            var viewModel = new ReviewConsultationViewModel
+            try
             {
-                Consultation = consultation,
-                AIAssessment = consultation.AIAssessment
-            };
+                var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
+                if (consultation == null) return NotFound();
 
-            return View(viewModel);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (consultation.PharmacistId != userId && !User.IsInRole("Admin"))
+                    return Forbid();
+
+                var patient = await _patientService.GetPatientWithDetailsAsync(consultation.PatientId);
+                var inventory = await _inventoryService.GetAllInventoryAsync();
+
+                var viewModel = new ReviewConsultationViewModel
+                {
+                    Consultation         = consultation,
+                    AIAssessment         = consultation.AIAssessment,
+                    Patient              = patient,
+                    CurrentMedications   = patient?.CurrentMedications ?? new List<CurrentMedication>(),
+                    Allergies            = patient?.Allergies ?? new List<Allergy>(),
+                    MedicalHistory       = patient?.MedicalHistories ?? new List<MedicalHistory>(),
+                    AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired)
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error loading review for consultation {id}");
+                TempData["Error"] = "An error occurred while loading the consultation.";
+                return RedirectToAction(nameof(Queue));
+            }
         }
 
-        // POST: Consultation/Complete/5
+        // POST: Consultation/SubmitRecommendation/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Pharmacist,Admin")]
+        public async Task<IActionResult> SubmitRecommendation(int id, ReviewConsultationViewModel model)
+        {
+            ModelState.Remove("Consultation");
+            ModelState.Remove("AIAssessment");
+            ModelState.Remove("Patient");
+            ModelState.Remove("AvailableMedications");
+            ModelState.Remove("CurrentMedications");
+            ModelState.Remove("Allergies");
+            ModelState.Remove("MedicalHistory");
+
+            if (!ModelState.IsValid)
+            {
+                var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
+                var patient = await _patientService.GetPatientWithDetailsAsync(consultation!.PatientId);
+                var inventory = await _inventoryService.GetAllInventoryAsync();
+
+                model.Consultation       = consultation;
+                model.AIAssessment       = consultation.AIAssessment;
+                model.Patient            = patient;
+                model.CurrentMedications = patient?.CurrentMedications ?? new List<CurrentMedication>();
+                model.Allergies          = patient?.Allergies ?? new List<Allergy>();
+                model.MedicalHistory     = patient?.MedicalHistories ?? new List<MedicalHistory>();
+                model.AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired);
+
+                return View("Review", model);
+            }
+
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var recommendation = new Recommendation
+                {
+                    PharmacistNotes = model.PharmacistNotes,
+                    InventoryId     = model.InventoryId,
+                    Dosage          = model.Dosage,
+                    Instructions    = model.Instructions,
+                    Warnings        = model.Warnings,
+                    ReferToDoctor   = model.ReferToDoctor,
+                    ReferralReason  = model.ReferralReason
+                };
+
+                var success = await _consultationService.SubmitRecommendationAsync(id, userId, recommendation);
+
+                if (success)
+                {
+                    TempData["Success"] = "Recommendation submitted successfully.";
+                    return RedirectToAction(nameof(Queue));
+                }
+
+                TempData["Error"] = "Unable to submit. Make sure this consultation is assigned to you.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error submitting recommendation for consultation {id}");
+                TempData["Error"] = "An error occurred while submitting the recommendation.";
+            }
+
+            return RedirectToAction(nameof(Review), new { id });
+        }
+
+        // POST: Consultation/Complete/5 (kept for legacy, not used by UI)
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Pharmacist,Admin")]
@@ -349,118 +529,18 @@ public async Task<IActionResult> MyConsultations(string? status, string? search,
 
             return RedirectToAction(nameof(Queue));
         }
-        
-        // GET: Consultation/Start
-[Authorize(Roles = "Patient")]
-public async Task<IActionResult> Start()
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    var patient = await _patientService.GetPatientByUserIdAsync(userId);
-    if (patient == null) return RedirectToAction("Dashboard", "Patient");
 
-    ViewBag.PatientName = patient.User?.FirstName;
-    ViewBag.TotalSteps = _chatService.TotalSteps;
-    return View();
-}
+        // ─── INNER CLASSES ───────────────────────────────────────────────
 
-// POST: Consultation/NextStep
-[HttpPost]
-[Authorize(Roles = "Patient")]
-public IActionResult NextStep([FromBody] NextStepRequest request)
-{
-    // Emergency check
-    if (_chatService.IsEmergency(request.Answer))
-    {
-        return Ok(new
+        public class NextStepRequest
         {
-            isEmergency = true,
-            message = "⚠️ This sounds like a medical emergency. Please call emergency services (140 in Lebanon) or go to the nearest hospital immediately. Do not wait for a pharmacist."
-        });
-    }
-
-    var nextStepNumber = request.CurrentStep + 1;
-
-    if (_chatService.IsLastStep(request.CurrentStep))
-    {
-        // All steps done — return summary signal
-        return Ok(new { isComplete = true });
-    }
-
-    var nextStep = _chatService.GetStep(nextStepNumber);
-    if (nextStep == null)
-        return Ok(new { isComplete = true });
-
-    return Ok(new
-    {
-        isComplete = false,
-        isEmergency = false,
-        step = new
-        {
-            stepNumber = nextStep.StepNumber,
-            question = nextStep.Question,
-            inputType = nextStep.InputType,
-            options = nextStep.Options,
-            placeholder = nextStep.Placeholder
+            public int CurrentStep { get; set; }
+            public string Answer { get; set; }
         }
-    });
-}
 
-// POST: Consultation/SubmitChat
-[HttpPost]
-[ValidateAntiForgeryToken]
-[Authorize(Roles = "Patient")]
-public async Task<IActionResult> SubmitChat(SubmitChatRequest request)
-{
-    try
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var patient = await _patientService.GetPatientByUserIdAsync(userId);
-        if (patient == null) return RedirectToAction("Dashboard", "Patient");
-
-        var answers = System.Text.Json.JsonSerializer.Deserialize<List<StepAnswer>>(request.AnswersJson);
-
-        var mainComplaint = answers?.FirstOrDefault(a => a.StepNumber == 1)?.Answer ?? "";
-        var duration = answers?.FirstOrDefault(a => a.StepNumber == 2)?.Answer;
-        var severity = answers?.FirstOrDefault(a => a.StepNumber == 3)?.Answer ?? "Moderate";
-        var transcript = _chatService.BuildSummary(answers ?? new());
-
-        var consultation = new Consultation
+        public class SubmitChatRequest
         {
-            PatientId = patient.PatientId,
-            Symptoms = mainComplaint,
-            SymptomDuration = duration,
-            SymptomSeverity = severity,
-            AdditionalInformation = transcript,
-            Status = "Pending"
-        };
-
-        var created = await _consultationService.CreateConsultationAsync(consultation);
-
-        // Placeholder AI assessment
-        var assessment = await _aiAssessmentService.GenerateAssessmentAsync(created);
-        TempData["AssessmentReport"] = assessment.AssessmentReport;
-        TempData["PossibleConditions"] = assessment.PossibleConditions;
-        TempData["RedFlags"] = assessment.RedFlags;
-        TempData["ConfidenceScore"] = assessment.ConfidenceScore?.ToString("F0");
-
-        return RedirectToAction(nameof(Confirmation), new { id = created.ConsultationId });
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error submitting consultation");
-        TempData["Error"] = "An error occurred while submitting. Please try again.";
-        return RedirectToAction(nameof(Start));
-    }
-}
-public class NextStepRequest
-{
-    public int CurrentStep { get; set; }
-    public string Answer { get; set; }
-}
-
-public class SubmitChatRequest
-{
-    public string AnswersJson { get; set; }
-}
+            public string AnswersJson { get; set; }
+        }
     }
 }

@@ -86,10 +86,18 @@ namespace PharmaCare.Services.Implementations
             return assessment;
         }
 
+        public async Task<AIAssessment> SaveAssessmentAsync(AIAssessment assessment)
+        {
+            await _consultationRepository.AddAIAssessmentAsync(assessment);
+            await _consultationRepository.SaveChangesAsync();
+            _logger.LogInformation($"AIAssessment saved for consultation {assessment.ConsultationId}");
+            return assessment;
+        }
         public async Task<AIAssessment?> GetAssessmentByConsultationIdAsync(int consultationId)
         {
             var consultation = await _consultationRepository.GetConsultationWithDetailsAsync(consultationId);
             return consultation?.AIAssessment;
         }
+        
     }
 }

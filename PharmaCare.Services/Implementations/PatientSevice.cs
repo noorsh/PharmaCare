@@ -100,7 +100,7 @@ namespace PharmaCare.Services.Implementations
             }
         }
 
-public async Task<bool> UpdatePatientAsync(Patient patient)
+        public async Task<bool> UpdatePatientAsync(Patient patient)
 {
     try
     {
@@ -225,6 +225,18 @@ public async Task<bool> UpdatePatientAsync(Patient patient)
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error searching patients with term: {searchTerm}");
+                throw;
+            }
+        }
+        public async Task<Patient?> GetPatientWithDetailsAsync(int patientId)
+        {
+            try
+            {
+                return await _patientRepository.GetPatientWithDetailsAsync(patientId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving patient details for ID {patientId}");
                 throw;
             }
         }

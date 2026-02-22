@@ -6,5 +6,6 @@ namespace PharmaCare.Services.Interfaces
     {
         Task<AIAssessment> GenerateAssessmentAsync(Consultation consultation);
         Task<AIAssessment?> GetAssessmentByConsultationIdAsync(int consultationId);
+        Task<AIAssessment> SaveAssessmentAsync(AIAssessment assessment); // ADD THIS
     }
 }

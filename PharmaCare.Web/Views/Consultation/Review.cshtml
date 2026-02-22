@@ -94,28 +94,102 @@
             </div>
         }
 
-        <!-- Pharmacist Action -->
+       <!-- Pharmacist Recommendation Form -->
         <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6">
             <h3 class="font-bold mb-4 flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary">rate_review</span>
-                Pharmacist Decision
+                Pharmacist Recommendation
             </h3>
-            <p class="text-sm text-[#617789] mb-4">Review the AI assessment and patient symptoms, then complete the consultation. You can add a recommendation via the Recommendation module.</p>
 
-            <form asp-action="Complete" asp-route-id="@c.ConsultationId" method="post"
-                  onsubmit="return confirm('Mark this consultation as completed?')">
+            <form asp-action="SubmitRecommendation" asp-route-id="@c.ConsultationId" method="post">
                 @Html.AntiForgeryToken()
-                <button type="submit"
-                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined">check_circle</span>
-                    Mark as Completed
-                </button>
+
+                <!-- Refer to Doctor Toggle -->
+                <div class="mb-5 p-4 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" asp-for="ReferToDoctor" id="referToggle"
+                               class="w-4 h-4 accent-yellow-500"
+                               onchange="toggleReferral(this)" />
+                        <span class="font-semibold text-yellow-700 dark:text-yellow-400">Refer patient to a doctor</span>
+                    </label>
+                    <div id="referralReasonBox" class="mt-3 hidden">
+                        <label class="text-xs font-bold text-[#617789] uppercase tracking-wider">Referral Reason</label>
+                        <textarea asp-for="ReferralReason" rows="2"
+                                  class="mt-1 w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="Why are you referring this patient?"></textarea>
+                    </div>
+                </div>
+
+                <!-- Medication -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">
+                        Recommended Medication <span class="text-[#617789] font-normal normal-case">(optional)</span>
+                    </label>
+                    <select asp-for="InventoryId"
+                            class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="">— No specific medication —</option>
+                        @foreach (var med in Model.AvailableMedications)
+                        {
+                            <option value="@med.InventoryId">@med.MedicineName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Dosage -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Dosage</label>
+                    <input asp-for="Dosage" type="text"
+                           class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                           placeholder="e.g. 500mg twice daily" />
+                </div>
+
+                <!-- Instructions -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Instructions</label>
+                    <textarea asp-for="Instructions" rows="2"
+                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="e.g. Take after meals, avoid alcohol..."></textarea>
+                </div>
+
+                <!-- Warnings -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Warnings / Precautions</label>
+                    <textarea asp-for="Warnings" rows="2"
+                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="e.g. Do not exceed 4g per day..."></textarea>
+                </div>
+
+                <!-- Clinical Notes (required) -->
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">
+                        Clinical Notes <span class="text-red-500">*</span>
+                    </label>
+                    <textarea asp-for="PharmacistNotes" rows="4"
+                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Your assessment, reasoning, and any advice for the patient..."></textarea>
+                    <span asp-validation-for="PharmacistNotes" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit"
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        Submit & Complete
+                    </button>
+                    <a asp-action="Queue"
+                       class="bg-transparent border border-[#e5e7eb] dark:border-[#2d3a4b] text-[#617789] font-bold py-3 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
+                        Back
+                    </a>
+                </div>
+
             </form>
         </div>
     </div>
 
-    <!-- Right: Patient Profile Summary -->
+    <!-- Right Sidebar -->
     <div class="space-y-4">
+
+        <!-- Patient Info (keep your existing block) -->
         <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
             <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-base">person</span>
@@ -150,5 +224,67 @@
                 </div>
             }
         </div>
+
+        <!-- Allergies -->
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
+            <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-red-500 text-base">warning</span>
+                Allergies
+            </h3>
+            @if (Model.Allergies.Any())
+            {
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var a in Model.Allergies)
+                    {
+                        <span class="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-semibold px-2 py-1 rounded-full">
+                            @a.AllergenName
+                        </span>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-xs text-[#617789]">No known allergies</p>
+            }
+        </div>
+
+        <!-- Current Medications -->
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
+            <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-500 text-base">medication</span>
+                Current Medications
+            </h3>
+            @if (Model.CurrentMedications.Any())
+            {
+                <div class="space-y-2">
+                    @foreach (var m in Model.CurrentMedications)
+                    {
+                        <div class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium px-3 py-2 rounded-lg">
+                            @m.MedicationName
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-xs text-[#617789]">No current medications on record</p>
+            }
+        </div>
+
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleReferral(checkbox) {
+            const box = document.getElementById('referralReasonBox');
+            box.classList.toggle('hidden', !checkbox.checked);
+        }
+        // On page load, show referral box if checkbox already checked (validation fail repopulation)
+        document.addEventListener('DOMContentLoaded', function () {
+            const cb = document.getElementById('referToggle');
+            if (cb && cb.checked) toggleReferral(cb);
+        });
+    </script>
+}

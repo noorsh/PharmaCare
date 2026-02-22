@@ -176,7 +176,7 @@
             <div class="grid md:grid-cols-2 gap-8 items-end">
                 <!-- Medication -->
                 <div>
-                    @if (rec.Medication != null)
+                    @if (rec.Inventory != null)
                     {
                         <h4 class="text-xs font-bold text-[#617789] uppercase tracking-widest mb-3">Recommended Medication</h4>
                         <div class="flex items-center gap-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 p-4 rounded-xl">
@@ -184,7 +184,7 @@
                                 <span class="material-symbols-outlined text-2xl">medication</span>
                             </div>
                             <div>
-                                <p class="text-primary font-bold text-lg">@rec.Medication.Name</p>
+                                <p class="text-primary font-bold text-lg">@rec.Inventory.MedicineName</p>
                                 @if (!string.IsNullOrEmpty(rec.Dosage))
                                 {
                                     <p class="text-[#617789] text-sm">@rec.Dosage</p>

@@ -12,5 +12,6 @@ namespace PharmaCare.Services.Interfaces
         Task<bool> DeletePatientAsync(int id);
         Task<bool> PatientExistsForUserAsync(string userId);
         Task<IEnumerable<Patient>> SearchPatientsAsync(string searchTerm);
+        Task<Patient?> GetPatientWithDetailsAsync(int patientId);
     }
 }

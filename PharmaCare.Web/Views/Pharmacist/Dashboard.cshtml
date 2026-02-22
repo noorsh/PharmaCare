@@ -1,0 +1,187 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.PharmacistDashboardViewModel
+@{
+    ViewData["Title"] = "Pharmacist Dashboard";
+    Layout = "_LayoutAuth";
+    var hour = DateTime.Now.Hour;
+    var greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+}
+
+<!-- Header -->
+<div class="flex flex-wrap justify-between items-end gap-3 mb-8">
+    <div>
+        <h1 class="text-3xl font-extrabold tracking-tight">@greeting, @Model.PharmacistFirstName</h1>
+        <p class="text-[#617789] dark:text-slate-400 mt-1">Here's your consultation overview for today.</p>
+    </div>
+    <div class="flex items-center gap-2 bg-white dark:bg-[#1a2632] px-4 py-2 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm">
+        <span class="material-symbols-outlined text-primary text-xl">calendar_today</span>
+        <p class="text-sm font-semibold uppercase tracking-wide">@DateTime.Now.ToString("MMMM dd, yyyy")</p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="flex flex-col gap-4 bg-white dark:bg-[#1a2632] rounded-xl p-6 border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm hover:shadow-md transition-shadow">
+        <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg w-fit">
+            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">schedule</span>
+        </div>
+        <div>
+            <p class="text-[#617789] text-sm font-medium uppercase tracking-wider">Pending</p>
+            <p class="text-3xl font-bold">@Model.PendingCount</p>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-4 bg-white dark:bg-[#1a2632] rounded-xl p-6 border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm hover:shadow-md transition-shadow">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg w-fit">
+            <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">visibility</span>
+        </div>
+        <div>
+            <p class="text-[#617789] text-sm font-medium uppercase tracking-wider">Under Review</p>
+            <p class="text-3xl font-bold">@Model.UnderReviewCount</p>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-4 bg-white dark:bg-[#1a2632] rounded-xl p-6 border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm hover:shadow-md transition-shadow">
+        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg w-fit">
+            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400">check_circle</span>
+        </div>
+        <div>
+            <p class="text-[#617789] text-sm font-medium uppercase tracking-wider">Completed Today</p>
+            <p class="text-3xl font-bold">@Model.CompletedTodayCount</p>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-4 bg-white dark:bg-[#1a2632] rounded-xl p-6 border border-[#e5e7eb] dark:border-[#2d3a4b] border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
+        <div class="p-2 bg-primary/10 rounded-lg w-fit">
+            <span class="material-symbols-outlined text-primary">groups</span>
+        </div>
+        <div>
+            <p class="text-[#617789] text-sm font-medium uppercase tracking-wider">Total Patients</p>
+            <p class="text-3xl font-bold">@Model.TotalPatientsServed</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+    <!-- Pending Consultations Table -->
+    <div class="xl:col-span-2 bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-[#e5e7eb] dark:border-[#2d3a4b]">
+            <h3 class="text-lg font-bold">Pending Consultations</h3>
+            <a asp-controller="Consultation" asp-action="Queue"
+               class="text-primary text-sm font-bold hover:underline">View All</a>
+        </div>
+
+        @if (!Model.PendingConsultations.Any())
+        {
+            <div class="p-12 text-center text-[#617789]">
+                <span class="material-symbols-outlined text-5xl text-emerald-400">done_all</span>
+                <p class="mt-3 font-semibold">No pending consultations</p>
+                <p class="text-sm mt-1">All caught up for now!</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-[#0f1923]">
+                            <th class="px-6 py-3 text-[#617789] text-xs font-bold uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-[#617789] text-xs font-bold uppercase tracking-wider">Patient</th>
+                            <th class="px-6 py-3 text-[#617789] text-xs font-bold uppercase tracking-wider">Severity</th>
+                            <th class="px-6 py-3 text-[#617789] text-xs font-bold uppercase tracking-wider">Symptoms</th>
+                            <th class="px-6 py-3 text-[#617789] text-xs font-bold uppercase tracking-wider">Time</th>
+                            <th class="px-6 py-3 text-[#617789] text-xs font-bold uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#e5e7eb] dark:divide-[#2d3a4b]">
+                        @foreach (var c in Model.PendingConsultations)
+                        {
+                            var initials = (c.Patient?.User?.FirstName?.Length > 0 ? c.Patient.User.FirstName[0].ToString() : "?") +
+                                           (c.Patient?.User?.LastName?.Length > 0 ? c.Patient.User.LastName[0].ToString() : "");
+                            var severityClass = c.SymptomSeverity == "Severe"
+                                ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                                : c.SymptomSeverity == "Moderate"
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                    : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+                            var timeAgo = (DateTime.UtcNow - c.CreatedAt).TotalMinutes < 60
+                                ? $"{(int)(DateTime.UtcNow - c.CreatedAt).TotalMinutes} mins ago"
+                                : $"{(int)(DateTime.UtcNow - c.CreatedAt).TotalHours} hours ago";
+
+                            <tr class="hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-colors">
+                                <td class="px-6 py-4 text-sm font-semibold">#@c.ConsultationId.ToString("D3")</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                            @initials
+                                        </div>
+                                        <span class="text-sm font-medium">@c.Patient?.User?.FirstName @c.Patient?.User?.LastName</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold @severityClass">
+                                        @(c.SymptomSeverity ?? "Mild")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-[#617789] text-sm max-w-[180px] truncate">@c.Symptoms</td>
+                                <td class="px-6 py-4 text-[#617789] text-sm">@timeAgo</td>
+                                <td class="px-6 py-4">
+                                    <form asp-controller="Consultation" asp-action="Assign" asp-route-id="@c.ConsultationId" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-primary/90 transition-all whitespace-nowrap">
+                                            Take &amp; Review
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Recently Completed Sidebar -->
+    <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] shadow-sm overflow-hidden h-fit">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-[#e5e7eb] dark:border-[#2d3a4b]">
+            <h3 class="text-lg font-bold">Recently Completed</h3>
+            <a asp-controller="Consultation" asp-action="History"
+               class="text-primary text-sm font-bold hover:underline">Full History</a>
+        </div>
+
+        @if (!Model.RecentlyCompleted.Any())
+        {
+            <div class="p-8 text-center text-[#617789] text-sm">
+                No completed consultations yet today.
+            </div>
+        }
+        else
+        {
+            <div class="p-4 flex flex-col gap-2">
+                @foreach (var c in Model.RecentlyCompleted)
+                {
+                    var completedAgo = c.CompletedAt.HasValue
+                        ? (DateTime.UtcNow - c.CompletedAt.Value).TotalMinutes < 60
+                            ? $"{(int)(DateTime.UtcNow - c.CompletedAt.Value).TotalMinutes} mins ago"
+                            : $"{(int)(DateTime.UtcNow - c.CompletedAt.Value).TotalHours} hours ago"
+                        : "—";
+
+                    <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-colors">
+                        <div>
+                            <p class="text-sm font-bold">@c.Patient?.User?.FirstName @c.Patient?.User?.LastName</p>
+                            <p class="text-xs text-[#617789]">@completedAgo</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wide rounded">
+                                Completed
+                            </span>
+                            <a asp-controller="Consultation" asp-action="Details" asp-route-id="@c.ConsultationId"
+                               class="text-primary text-xs font-bold uppercase tracking-wider hover:underline">View</a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>T

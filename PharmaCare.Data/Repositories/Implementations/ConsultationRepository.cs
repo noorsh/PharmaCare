@@ -62,5 +62,14 @@ namespace PharmaCare.Data.Repositories.Implementations
                 .Take(count)
                 .ToListAsync();
         }
+        public async Task AddAIAssessmentAsync(AIAssessment assessment)
+        {
+            await _context.AIAssessments.AddAsync(assessment);
+        }
+
+        public async Task AddRecommendationAsync(Recommendation recommendation)
+        {
+            await _context.Recommendations.AddAsync(recommendation);
+        }
     }
 }
