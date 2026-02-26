@@ -11,6 +11,7 @@ using PharmaCare.Services.Implementations;
 using PharmaCare.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Add services to the container
