@@ -9,30 +9,32 @@ using PharmaCare.Data.Repositories.Implementations;
 using PharmaCare.Data.Repositories.Interfaces;
 using PharmaCare.Services.Implementations;
 using PharmaCare.Services.Interfaces;
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Add services to the container
 builder.Services.AddControllersWithViews();
+
 // Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                       ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrEmpty(connectionString))
+    throw new InvalidOperationException("Connection string is not configured.");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Password settings
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 6;
-
-    // User settings
     options.User.RequireUniqueEmail = true;
-
-    // Sign-in settings
     options.SignIn.RequireConfirmedEmail = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -56,9 +58,7 @@ builder.Services.AddScoped<IMedicalHistoryRepository, MedicalHistoryRepository>(
 builder.Services.AddScoped<IAllergyRepository, AllergyRepository>();
 builder.Services.AddScoped<ICurrentMedicationRepository, CurrentMedicationRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
-builder.Services.AddScoped<IConsultationRepository, ConsultationRepository>();
 builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
-
 
 // Services
 builder.Services.AddScoped<IPatientService, PatientService>();
@@ -67,14 +67,12 @@ builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
 builder.Services.AddScoped<IAllergyService, AllergyService>();
 builder.Services.AddScoped<ICurrentMedicationService, CurrentMedicationService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
-builder.Services.AddScoped<IConsultationService, ConsultationService>();
 builder.Services.AddScoped<IAIAssessmentService, AIAssessmentService>();
 builder.Services.AddScoped<ConsultationChatService>();
 builder.Services.AddScoped<IMedicationService, MedicationService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -83,9 +81,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
