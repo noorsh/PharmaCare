@@ -7,9 +7,8 @@ namespace PharmaCare.MVC.Controllers
 {
     /// <summary>
     /// TEMPORARY CONTROLLER - Used only for initial setup
-    /// DELETE THIS AFTER CREATING YOUR FIRST ADMIN USER
     /// </summary>
-    [AllowAnonymous]
+    [AllowAnonymous] 
     public class SetupController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
