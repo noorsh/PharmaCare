@@ -17,9 +17,8 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // Add services to the container
 builder.Services.AddControllersWithViews();
 // Database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                       ?? Environment.GetEnvironmentVariable("DATABASE_URL");
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
