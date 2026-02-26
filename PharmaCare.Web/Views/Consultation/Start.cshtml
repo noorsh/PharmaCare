@@ -1,4 +1,4 @@
-﻿@{
+﻿﻿@{
     ViewData["Title"] = "New Consultation";
     Layout = "_LayoutAuth";
 }
@@ -176,7 +176,9 @@
     }
 
     function confirmSubmit() {
-        document.getElementById('answersJson').value = JSON.stringify(answers);
+        const payload = JSON.stringify(answers);
+        document.getElementById('answersJson').value = payload;
+        console.log('[Consultation] submitting answersJson:', payload);
         document.getElementById('submitForm').submit();
     }
 

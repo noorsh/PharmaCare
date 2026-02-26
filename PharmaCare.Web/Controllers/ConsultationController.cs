@@ -148,7 +148,7 @@ namespace PharmaCare.MVC.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Patient")]
-        public async Task<IActionResult> SubmitChat(SubmitChatRequest request)
+        public async Task<IActionResult> SubmitChat([FromForm] SubmitChatRequest request)
         {
             try
             {
@@ -156,7 +156,19 @@ namespace PharmaCare.MVC.Controllers
                 var patient = await _patientService.GetPatientByUserIdAsync(userId);
                 if (patient == null) return RedirectToAction("Dashboard", "Patient");
 
-                var answers = System.Text.Json.JsonSerializer.Deserialize<List<StepAnswer>>(request.AnswersJson);
+                if (string.IsNullOrWhiteSpace(request?.AnswersJson))
+                {
+                    _logger.LogWarning("SubmitChat called with empty AnswersJson");
+                    TempData["Error"] = "No answers were submitted. Please try again.";
+                    return RedirectToAction(nameof(Start));
+                }
+
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var answers = System.Text.Json.JsonSerializer.Deserialize<List<StepAnswer>>(request.AnswersJson, jsonOptions) ?? new List<StepAnswer>();
 
                 var mainComplaint = answers?.FirstOrDefault(a => a.StepNumber == 1)?.Answer ?? "";
                 var duration = answers?.FirstOrDefault(a => a.StepNumber == 2)?.Answer;
@@ -472,6 +484,30 @@ namespace PharmaCare.MVC.Controllers
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+                // If an inventory item was selected, ensure it exists to avoid FK violations
+                if (model.InventoryId.HasValue)
+                {
+                    var inv = await _inventoryService.GetInventoryByIdAsync(model.InventoryId.Value);
+                    if (inv == null)
+                    {
+                        // Reload required view data and show validation error
+                        ModelState.AddModelError("InventoryId", "Selected medication not found in inventory.");
+                        var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
+                        var patient = await _patientService.GetPatientWithDetailsAsync(consultation!.PatientId);
+                        var inventory = await _inventoryService.GetAllInventoryAsync();
+
+                        model.Consultation       = consultation;
+                        model.AIAssessment       = consultation.AIAssessment;
+                        model.Patient            = patient;
+                        model.CurrentMedications = patient?.CurrentMedications ?? new List<CurrentMedication>();
+                        model.Allergies          = patient?.Allergies ?? new List<Allergy>();
+                        model.MedicalHistory     = patient?.MedicalHistories ?? new List<MedicalHistory>();
+                        model.AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired);
+
+                        return View("Review", model);
+                    }
+                }
+
                 var recommendation = new Recommendation
                 {
                     PharmacistNotes = model.PharmacistNotes,
@@ -535,12 +571,13 @@ namespace PharmaCare.MVC.Controllers
         public class NextStepRequest
         {
             public int CurrentStep { get; set; }
-            public string Answer { get; set; }
+            public string? Answer { get; set; }
         }
 
         public class SubmitChatRequest
         {
-            public string AnswersJson { get; set; }
+            public string? AnswersJson { get; set; }
         }
     }
 }
+

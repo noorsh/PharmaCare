@@ -1,4 +1,4 @@
-﻿namespace PharmaCare.Services.Implementations
+﻿﻿namespace PharmaCare.Services.Implementations
 {
     public class ConsultationChatService
     {
@@ -96,6 +96,6 @@
     public class StepAnswer
     {
         public int StepNumber { get; set; }
-        public string Answer { get; set; }
+        public string? Answer { get; set; }
     }
 }
