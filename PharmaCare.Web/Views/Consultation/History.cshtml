@@ -1,0 +1,188 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.PharmacistHistoryViewModel
+@{
+    ViewData["Title"] = "Consultation History";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Header -->
+<div class="flex flex-wrap justify-between items-end gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-3">
+            <h1 class="text-3xl font-black tracking-tight">Consultation History</h1>
+            <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                @Model.TotalCount Records
+            </span>
+        </div>
+        <p class="text-[#617789] text-sm mt-1">All completed and cancelled consultations</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" asp-action="History">
+    <div class="bg-white dark:bg-[#1a2632] p-4 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] flex flex-wrap gap-4 items-center mb-6">
+        <div class="flex-1 min-w-[240px] relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#617789] text-xl">person_search</span>
+            <input type="text" name="search" value="@Model.SearchQuery"
+                   placeholder="Search by patient name or ID..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-[#0f1923] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+        </div>
+
+        <select name="status"
+                class="py-2 px-3 bg-slate-50 dark:bg-[#0f1923] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+            <option value="All" selected="@(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "All")">All Statuses</option>
+            <option value="Completed" selected="@(Model.StatusFilter == "Completed")">Completed</option>
+            <option value="Cancelled" selected="@(Model.StatusFilter == "Cancelled")">Cancelled</option>
+        </select>
+
+        <div class="flex items-center gap-2 text-[#617789] text-sm">
+            <input type="date" name="dateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+                   class="bg-slate-50 dark:bg-[#0f1923] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            <span>to</span>
+            <input type="date" name="dateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                   class="bg-slate-50 dark:bg-[#0f1923] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+        </div>
+
+        <button type="submit"
+                class="bg-primary text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-primary/90 transition-all">
+            Apply
+        </button>
+        <a asp-action="History" class="text-[#617789] text-sm font-semibold hover:text-primary transition-colors">Clear</a>
+    </div>
+</form>
+
+<!-- Table -->
+<div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] overflow-hidden shadow-sm">
+    @if (!Model.Consultations.Any())
+    {
+        <div class="p-12 text-center text-[#617789]">
+            <span class="material-symbols-outlined text-5xl">history</span>
+            <p class="mt-3 font-semibold">No consultations found</p>
+            <p class="text-sm mt-1">Try adjusting your filters</p>
+        </div>
+    }
+    else
+    {
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50 dark:bg-[#0f1923] text-[#617789] text-xs font-bold uppercase tracking-wider">
+                    <th class="px-6 py-4">ID</th>
+                    <th class="px-6 py-4">Patient</th>
+                    <th class="px-6 py-4">Symptoms</th>
+                    <th class="px-6 py-4">Severity</th>
+                    <th class="px-6 py-4">Status</th>
+                    <th class="px-6 py-4">Submitted</th>
+                    <th class="px-6 py-4">Completed</th>
+                    <th class="px-6 py-4">Pharmacist</th>
+                    <th class="px-6 py-4 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#e5e7eb] dark:divide-[#2d3a4b]">
+                @foreach (var (c, i) in Model.Consultations.Select((c, i) => (c, i)))
+                {
+                    var rowBg = i % 2 != 0 ? "bg-slate-50/30 dark:bg-[#0f1923]/30" : "";
+                    <tr class="@rowBg hover:bg-slate-50/50 dark:hover:bg-[#0f1923]/50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-mono text-[#617789]">
+                            #@c.ConsultationId.ToString("D4")
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="size-8 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-bold">
+                                    @c.PatientInitials
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold leading-none">@c.PatientName</p>
+                                    <p class="text-xs text-[#617789] mt-1">@(c.PatientCity ?? "—")</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 max-w-[200px]">
+                            <p class="text-sm text-[#617789] truncate" title="@c.Symptoms">@c.Symptoms</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="flex items-center gap-1.5 text-xs font-bold @c.SeverityClass px-2 py-1 rounded-full w-fit uppercase">
+                                <span class="size-1.5 rounded-full @c.SeverityDot"></span>
+                                @(c.SymptomSeverity ?? "Mild")
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-bold @c.StatusClass px-2 py-1 rounded-full w-fit uppercase">
+                                @c.Status
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-[#617789]">
+                            @c.CreatedAt.ToString("MMM dd, yyyy")
+                        </td>
+                        <td class="px-6 py-4 text-sm text-[#617789]">
+                            @(c.CompletedAt.HasValue ? c.CompletedAt.Value.ToString("MMM dd, yyyy") : "—")
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium">
+                            @c.PharmacistName
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a asp-action="Details" asp-route-id="@c.ConsultationId"
+                               class="text-primary hover:bg-primary/10 border border-primary/20 px-3 py-1 rounded text-xs font-bold transition-colors">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="px-6 py-4 flex items-center justify-between border-t border-[#e5e7eb] dark:border-[#2d3a4b] bg-slate-50/50 dark:bg-[#0f1923]/30">
+            <p class="text-sm text-[#617789]">
+                Showing
+                <span class="font-bold text-slate-700 dark:text-slate-200">
+                    @((Model.CurrentPage - 1) * Model.HistoryPageSize  + 1)
+                </span>
+                <span class="text-[#617789]">–</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">
+                    @(Math.Min(Model.CurrentPage * Model.HistoryPageSize, Model.TotalCount))
+                </span>
+                of
+                <span class="font-bold text-slate-700 dark:text-slate-200">@Model.TotalCount</span>
+                results
+            </p>
+            <div class="flex gap-1">
+                @if (Model.CurrentPage > 1)
+                {
+                    <a asp-action="History"
+                       asp-route-page="@(Model.CurrentPage - 1)"
+                       asp-route-search="@Model.SearchQuery"
+                       asp-route-status="@Model.StatusFilter"
+                       asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+                       asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                       class="size-8 flex items-center justify-center rounded border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] text-[#617789] hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-lg">chevron_left</span>
+                    </a>
+                }
+                @for (int pg = 1; pg <= Model.TotalPages; pg++)
+                {
+                    var isActive = pg == Model.CurrentPage;
+                    <a asp-action="History"
+                       asp-route-page="@pg"
+                       asp-route-search="@Model.SearchQuery"
+                       asp-route-status="@Model.StatusFilter"
+                       asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+                       asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                       class="size-8 flex items-center justify-center rounded border @(isActive ? "border-primary bg-primary text-white" : "border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] text-[#617789] hover:border-primary hover:text-primary") font-bold text-sm transition-colors">
+                        @pg
+                    </a>
+                }
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    <a asp-action="History"
+                       asp-route-page="@(Model.CurrentPage + 1)"
+                       asp-route-search="@Model.SearchQuery"
+                       asp-route-status="@Model.StatusFilter"
+                       asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+                       asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                       class="size-8 flex items-center justify-center rounded border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] text-[#617789] hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-lg">chevron_right</span>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>

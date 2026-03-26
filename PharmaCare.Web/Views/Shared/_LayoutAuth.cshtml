@@ -47,6 +47,7 @@
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-[#111518] dark:text-white font-display">
+
 <!-- Top Navigation Bar -->
 <header class="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#1a2632] border-b border-[#e5e7eb] dark:border-[#2d3a4b] z-50 flex items-center justify-between px-6">
     <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3">
@@ -55,12 +56,59 @@
         </div>
         <h1 class="text-xl font-extrabold tracking-tight">PharmaCare</h1>
     </a>
+
     <div class="flex items-center gap-4">
-        <button class="p-2 text-[#617789] dark:text-[#94a3b8] hover:bg-[#f0f2f4] dark:hover:bg-[#243341] rounded-full relative">
-            <span class="material-symbols-outlined">notifications</span>
-        </button>
+
+        <!-- Notification Bell (Pharmacist & Admin only) -->
+        @if (User.IsInRole("Pharmacist") || User.IsInRole("Admin"))
+        {
+            <div class="relative" id="notificationBell">
+                <button onclick="toggleNotifications()"
+                        class="p-2 text-[#617789] dark:text-[#94a3b8] hover:bg-[#f0f2f4] dark:hover:bg-[#243341] rounded-full relative">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span id="notifBadge"
+                          class="hidden absolute -top-0.5 -right-0.5 size-5 bg-red-500 text-white text-[10px] font-bold rounded-full items-center justify-center">
+                        0
+                    </span>
+                </button>
+
+                <!-- Dropdown -->
+                <div id="notifDropdown"
+                     class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl shadow-xl overflow-hidden z-50">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-[#e5e7eb] dark:border-[#2d3a4b]">
+                        <h3 class="font-bold text-sm">Notifications</h3>
+                        <span id="notifCount" class="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+
+                    <!-- List -->
+                    <div id="notifList" class="max-h-80 overflow-y-auto divide-y divide-[#e5e7eb] dark:divide-[#2d3a4b]">
+                        <div class="px-4 py-6 text-center text-[#617789] text-sm">
+                            <span class="material-symbols-outlined text-3xl block mb-2">notifications_none</span>
+                            All caught up!
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-4 py-3 border-t border-[#e5e7eb] dark:border-[#2d3a4b] bg-slate-50 dark:bg-[#0f1923]">
+                        <a asp-controller="Consultation" asp-action="Queue"
+                           class="text-primary text-xs font-bold hover:underline">
+                            View consultation queue →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <button class="p-2 text-[#617789] dark:text-[#94a3b8] hover:bg-[#f0f2f4] dark:hover:bg-[#243341] rounded-full">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+        }
+
         <div class="h-8 w-[1px] bg-[#e5e7eb] dark:bg-[#2d3a4b] mx-2"></div>
-            
+
         <!-- User Dropdown -->
         <div class="relative group">
             <div class="flex items-center gap-3 cursor-pointer">
@@ -86,7 +134,7 @@
                 </div>
                 <span class="material-symbols-outlined text-sm text-[#617789]">expand_more</span>
             </div>
-                
+
             <!-- Dropdown Menu -->
             <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg shadow-lg overflow-hidden">
                 @if (User.IsInRole("Patient"))
@@ -118,101 +166,110 @@
         <nav class="p-4 space-y-1">
             @if (User.IsInRole("Patient"))
             {
-                <a asp-controller="Patient" asp-action="Dashboard" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                <a asp-controller="Patient" asp-action="Dashboard"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Patient" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
-                    
-                <a asp-controller="Patient" asp-action="Profile" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+
+                <a asp-controller="Patient" asp-action="Profile"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Patient" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">person</span>
                     <span>My Profile</span>
                 </a>
-                    
-                <a asp-controller="MedicalHistory" asp-action="Index" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "MedicalHistory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+
+                <a asp-controller="MedicalHistory" asp-action="Index"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "MedicalHistory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">history</span>
                     <span>Medical History</span>
                 </a>
-                    
-                <a asp-controller="Allergy" asp-action="Index" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Allergies" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+
+                <a asp-controller="Allergy" asp-action="Index"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Allergy" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">warning</span>
                     <span>Allergies</span>
                 </a>
-                    
-                <a asp-controller="CurrentMedication" asp-action="Index" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "CurrentMedications" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+
+                <a asp-controller="CurrentMedication" asp-action="Index"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "CurrentMedication" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">pill</span>
                     <span>Current Medications</span>
                 </a>
-                    
-                <a asp-controller="Consultation" asp-action="Start" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Start" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+
+                <a asp-controller="Consultation" asp-action="Start"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "Start" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">chat</span>
-                    <span>Consultations</span>
+                    <span>New Consultation</span>
                 </a>
 
-                <a asp-controller="Consultation" asp-action="MyConsultations" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "MyConsultations" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                <a asp-controller="Consultation" asp-action="MyConsultations"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "MyConsultations" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">history</span>
                     <span>Consultation History</span>
                 </a>
             }
-          else if (User.IsInRole("Pharmacist"))
-{
-    <a asp-controller="Pharmacist" asp-action="Dashboard"
-       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Pharmacist" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-        <span class="material-symbols-outlined">dashboard</span>
-        <span>Dashboard</span>
-    </a>
-
-    <a asp-controller="Consultation" asp-action="Queue"
-       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "Queue" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-        <span class="material-symbols-outlined">pending_actions</span>
-        <span>Consultation Queue</span>
-    </a>
-
-    <a asp-controller="Consultation" asp-action="History"
-       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-        <span class="material-symbols-outlined">history</span>
-        <span>Consultation History</span>
-    </a>
-
-    <a asp-controller="Patient" asp-action="List"
-       class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Patient" && ViewContext.RouteData.Values["action"]?.ToString() == "List" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
-        <span class="material-symbols-outlined">group</span>
-        <span>Patients</span>
-    </a>
-}
-            else if (User.IsInRole("Admin"))
+            else if (User.IsInRole("Pharmacist"))
             {
-                <a asp-controller="Admin" asp-action="Dashboard" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                <a asp-controller="Pharmacist" asp-action="Dashboard"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Pharmacist" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
-                <a asp-controller="Inventory" asp-action="Index" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Inventory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+
+                <a asp-controller="Consultation" asp-action="Queue"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "Queue" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                    <span class="material-symbols-outlined">pending_actions</span>
+                    <span>Consultation Queue</span>
+                </a>
+
+                <a asp-controller="Consultation" asp-action="History"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultation" && ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Consultation History</span>
+                </a>
+
+                <a asp-controller="Pharmacist" asp-action="Patients"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Pharmacist" && ViewContext.RouteData.Values["action"]?.ToString() == "Patients" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                    <span class="material-symbols-outlined">group</span>
+                    <span>Patients</span>
+                </a>
+
+                <a asp-controller="Inventory" asp-action="Index"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">inventory</span>
                     <span>Inventory</span>
                 </a>
-                <a asp-controller="Admin" asp-action="Users" 
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+            }
+            else if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="Admin" asp-action="Dashboard"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+
+                <a asp-controller="Inventory" asp-action="Index"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventory" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
+                    <span class="material-symbols-outlined">inventory</span>
+                    <span>Inventory</span>
+                </a>
+
+                <a asp-controller="Admin" asp-action="Users"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                     <span class="material-symbols-outlined">people</span>
                     <span>Users</span>
-                </a>   
+                </a>
             }
         </nav>
-            
+
         <div class="mt-8 px-4 pb-4">
             <p class="px-3 text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest mb-2">Support</p>
             <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632] transition-colors">
                 <span class="material-symbols-outlined">help</span>
                 <span>Help Center</span>
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632] transition-colors">
+            <a asp-controller="Account" asp-action="ChangePassword"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "ChangePassword" ? "bg-primary text-white font-medium" : "text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#1a2632]") transition-colors">
                 <span class="material-symbols-outlined">settings</span>
                 <span>Settings</span>
             </a>
@@ -244,7 +301,100 @@
         @RenderBody()
     </main>
 </div>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="/lib/jquery/dist/jquery.min.js"></script>
+
+@if (User.IsInRole("Pharmacist") || User.IsInRole("Admin"))
+{
+    <script>
+        const STORAGE_KEY = 'notif_last_seen_@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)';
+
+        document.addEventListener('click', function (e) {
+            const bell = document.getElementById('notificationBell');
+            if (bell && !bell.contains(e.target)) {
+                document.getElementById('notifDropdown').classList.add('hidden');
+            }
+        });
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notifDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+            dropdown.classList.toggle('hidden');
+
+            if (isHidden) {
+                // Opening — load then mark as seen
+                loadNotifications(true);
+            }
+        }
+
+        function loadNotifications(markSeen = false) {
+            $.get('/Notification/GetNotifications', function (data) {
+                const lastSeen = parseInt(localStorage.getItem(STORAGE_KEY) || '0');
+                const unseenCount = Math.max(0, data.count - lastSeen);
+
+                updateBadge(unseenCount);
+                renderNotifications(data.notifications);
+
+                if (markSeen) {
+                    // Store current count as seen
+                    localStorage.setItem(STORAGE_KEY, data.count.toString());
+                    updateBadge(0);
+                }
+            });
+        }
+
+        function updateBadge(count) {
+            const badge = document.getElementById('notifBadge');
+            const countEl = document.getElementById('notifCount');
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : count;
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            } else {
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
+            }
+            if (countEl) countEl.textContent = count;
+        }
+
+        function renderNotifications(notifications) {
+            const list = document.getElementById('notifList');
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="px-4 py-6 text-center text-[#617789] text-sm">
+                        <span class="material-symbols-outlined text-3xl block mb-2">notifications_none</span>
+                        All caught up!
+                    </div>`;
+                return;
+            }
+
+            const colorMap = {
+                blue:  { bg: 'bg-blue-100 dark:bg-blue-900/30',  text: 'text-blue-600 dark:text-blue-400' },
+                amber: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+                red:   { bg: 'bg-red-100 dark:bg-red-900/30',    text: 'text-red-600 dark:text-red-400' }
+            };
+
+            list.innerHTML = notifications.map(n => {
+                const c = colorMap[n.color] || colorMap.blue;
+                return `
+                    <a href="${n.link}" class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-colors">
+                        <div class="size-8 rounded-full ${c.bg} ${c.text} flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span class="material-symbols-outlined text-[18px]">${n.icon}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-100">${n.title}</p>
+                            <p class="text-xs text-[#617789] mt-0.5 truncate">${n.message}</p>
+                            <p class="text-[10px] text-[#94a3b8] mt-1">${n.time}</p>
+                        </div>
+                    </a>`;
+            }).join('');
+        }
+
+        // Initial load — show badge for new notifications since last seen
+        loadNotifications(false);
+        setInterval(() => loadNotifications(false), 30000);
+    </script>
+}
 @await RenderSectionAsync("Scripts", required: false)
 
 </body>

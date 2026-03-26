@@ -10,4 +10,8 @@
       <ProjectReference Include="..\PharmaCare.Data\PharmaCare.Data.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="MailKit" Version="4.15.0" />
+    </ItemGroup>
+
 </Project>

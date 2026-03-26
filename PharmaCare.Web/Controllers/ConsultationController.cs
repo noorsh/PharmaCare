@@ -578,6 +578,79 @@ namespace PharmaCare.MVC.Controllers
         {
             public string? AnswersJson { get; set; }
         }
+        // GET: Consultation/History
+[Authorize(Roles = "Pharmacist,Admin")]
+public async Task<IActionResult> History(string? search, string? status, DateTime? dateFrom, DateTime? dateTo, int page = 1)
+{
+    try
+    {
+        var all = await _consultationService.GetRecentConsultationsWithDetailsAsync(500);
+
+        var filtered = all
+            .Where(c => c.Status == "Completed" || c.Status == "Cancelled")
+            .AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            filtered = filtered.Where(c =>
+                c.ConsultationId.ToString().Contains(q) ||
+                ($"{c.Patient?.User?.FirstName} {c.Patient?.User?.LastName}").ToLower().Contains(q));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status) && status != "All")
+            filtered = filtered.Where(c => c.Status == status);
+
+        if (dateFrom.HasValue)
+            filtered = filtered.Where(c => c.CreatedAt.Date >= dateFrom.Value.Date);
+
+        if (dateTo.HasValue)
+            filtered = filtered.Where(c => c.CreatedAt.Date <= dateTo.Value.Date);
+
+        var ordered = filtered.OrderByDescending(c => c.CreatedAt).ToList();
+        const int pageSize = 10;
+
+        var paged = ordered
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new PharmacistConsultationRow
+            {
+                ConsultationId  = c.ConsultationId,
+                PatientName     = $"{c.Patient?.User?.FirstName} {c.Patient?.User?.LastName}".Trim(),
+                PatientInitials = $"{c.Patient?.User?.FirstName?[0]}{c.Patient?.User?.LastName?[0]}".ToUpper(),
+                PatientCity     = c.Patient?.City,
+                Symptoms        = c.Symptoms,
+                SymptomSeverity = c.SymptomSeverity,
+                Status          = c.Status,
+                CreatedAt       = c.CreatedAt,
+                CompletedAt     = c.CompletedAt,
+                PharmacistName  = c.Pharmacist != null
+                    ? $"{c.Pharmacist.FirstName} {c.Pharmacist.LastName}".Trim()
+                    : "—"
+            })
+            .ToList();
+
+        var viewModel = new PharmacistHistoryViewModel
+        {
+            Consultations = paged,
+            TotalCount    = ordered.Count,
+            CurrentPage   = page,
+            HistoryPageSize = pageSize,
+            SearchQuery   = search,
+            StatusFilter  = status,
+            DateFrom      = dateFrom,
+            DateTo        = dateTo
+        };
+
+        return View(viewModel);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error loading consultation history");
+        TempData["Error"] = "An error occurred while loading history.";
+        return View(new PharmacistHistoryViewModel());
+    }
+}
     }
 }
 

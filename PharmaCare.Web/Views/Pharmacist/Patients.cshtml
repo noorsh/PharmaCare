@@ -1,0 +1,281 @@
+﻿@model PharmaCare.MVC.Models.ViewModels.PatientListViewModel
+@{
+    ViewData["Title"] = "Patients";
+    Layout = "_LayoutAuth";
+}
+
+<!-- Header -->
+<div class="flex flex-wrap justify-between items-end gap-3 mb-6">
+    <div class="flex items-center gap-4">
+        <h1 class="text-3xl font-black tracking-tight">Patients</h1>
+        <span class="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            @Model.TotalCount Total
+        </span>
+    </div>
+    <!-- Search -->
+    <form method="get" asp-action="Patients" class="flex items-center gap-2">
+        <input type="hidden" name="tab" value="@Model.ActiveTab" />
+        <div class="flex items-center bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg px-3 py-2 gap-2 w-72">
+            <span class="material-symbols-outlined text-[#617789] text-xl">search</span>
+            <input type="text" name="search" value="@Model.SearchQuery"
+                   placeholder="Search by name, phone, or city..."
+                   class="bg-transparent text-sm focus:outline-none w-full" />
+        </div>
+        <button type="submit"
+                class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-primary/90 transition-all">
+            Search
+        </button>
+    </form>
+</div>
+
+<!-- Tabs -->
+<div class="flex border-b border-[#e5e7eb] dark:border-[#2d3a4b] mb-0 bg-white dark:bg-[#1a2632] rounded-t-xl px-4">
+    @foreach (var t in new[] { ("All", "All"), ("Flagged", "Flagged"), ("HighRisk", "High Risk") })
+    {
+        var isActive = Model.ActiveTab == t.Item1;
+        <a asp-action="Patients" asp-route-search="@Model.SearchQuery" asp-route-tab="@t.Item1"
+           class="flex items-center border-b-2 @(isActive ? "border-primary text-primary" : "border-transparent text-[#617789] hover:text-slate-700 dark:hover:text-slate-300") px-4 py-4 text-sm font-bold transition-colors">
+            @t.Item2
+        </a>
+    }
+</div>
+
+<!-- List Header -->
+<div class="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#617789] bg-slate-50 dark:bg-[#0f1923] border-x border-t border-[#e5e7eb] dark:border-[#2d3a4b]">
+    <div class="col-span-4">Patient</div>
+    <div class="col-span-2">Location</div>
+    <div class="col-span-1">Blood</div>
+    <div class="col-span-4">Stats &amp; Flags</div>
+    <div class="col-span-1 text-right">Details</div>
+</div>
+
+<!-- Patient Rows -->
+@if (!Model.Patients.Any())
+{
+    <div class="bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-b-xl p-12 text-center text-[#617789]">
+        <span class="material-symbols-outlined text-5xl">person_search</span>
+        <p class="mt-3 font-semibold">No patients found</p>
+        @if (!string.IsNullOrEmpty(Model.SearchQuery))
+        {
+            <p class="text-sm mt-1">Try a different search term</p>
+        }
+    </div>
+}
+else
+{
+    <div class="border-x border-[#e5e7eb] dark:border-[#2d3a4b] rounded-b-xl overflow-hidden">
+        @foreach (var p in Model.Patients)
+        {
+            <div class="patient-row bg-white dark:bg-[#1a2632] border-b border-[#e5e7eb] dark:border-[#2d3a4b] last:border-b-0">
+                <!-- Row -->
+                <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-colors cursor-pointer"
+                     onclick="togglePatient(@p.PatientId)">
+                    <!-- Patient info -->
+                    <div class="col-span-4 flex items-center gap-3">
+                        <div class="size-9 flex items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm border border-primary/20">
+                            @p.Initials
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold">@p.FullName</p>
+                            <p class="text-xs text-[#617789]">@p.Age yrs • @(p.BloodType ?? "—")</p>
+                        </div>
+                    </div>
+
+                    <!-- City -->
+                    <div class="col-span-2 text-sm text-[#617789]">
+                        @if (!string.IsNullOrEmpty(p.City))
+                        {
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">location_on</span>
+                                @p.City
+                            </span>
+                        }
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    </div>
+
+                    <!-- Blood type -->
+                    <div class="col-span-1">
+                        @if (p.BloodType != null)
+                        {
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                @p.BloodType
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-[#617789] text-xs">—</span>
+                        }
+                    </div>
+
+                    <!-- Stats & Flags -->
+                    <div class="col-span-4 flex flex-wrap gap-2">
+                        <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[11px] font-semibold border border-blue-100 dark:border-blue-900/30">
+                            <span class="material-symbols-outlined text-[14px]">chat</span>
+                            @p.ConsultationCount Consults
+                        </div>
+                        @if (p.AllergyCount > 0)
+                        {
+                            <div class="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded text-[11px] font-semibold border border-red-100 dark:border-red-900/30">
+                                <span class="material-symbols-outlined text-[14px]">warning</span>
+                                @p.AllergyCount Allergies
+                            </div>
+                        }
+                        @if (p.MedicationCount > 0)
+                        {
+                            <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
+                                <span class="material-symbols-outlined text-[14px]">medication</span>
+                                @p.MedicationCount Meds
+                            </div>
+                        }
+                        @if (p.IsPregnant)
+                        {
+                            <span class="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded text-[11px] font-bold border border-yellow-100 dark:border-yellow-900/30">
+                                ✦ Pregnant
+                            </span>
+                        }
+                        @if (p.IsBreastfeeding)
+                        {
+                            <span class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded text-[11px] font-bold border border-blue-100 dark:border-blue-900/30">
+                                Breastfeeding
+                            </span>
+                        }
+                        @if (p.HasKidneyDisease || p.HasLiverDisease)
+                        {
+                            <span class="bg-red-600 text-white px-2 py-0.5 rounded text-[11px] font-bold">
+                                ⚠ High Risk
+                            </span>
+                        }
+                    </div>
+
+                    <!-- Expand toggle -->
+                    <div class="col-span-1 text-right">
+                        <span id="chevron-@p.PatientId"
+                              class="material-symbols-outlined text-[#617789] transition-transform duration-200">
+                            expand_more
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Expanded Panel -->
+                <div id="panel-@p.PatientId" class="hidden border-t border-[#e5e7eb] dark:border-[#2d3a4b] bg-primary/5 dark:bg-primary/10 px-6 py-5">
+                    <div class="grid grid-cols-2 gap-8">
+                        <!-- Left -->
+                        <div class="space-y-5">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase text-red-600 dark:text-red-400 mb-2 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">dangerous</span> Allergies
+                                </h4>
+                                @if (p.Allergies.Any())
+                                {
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach (var a in p.Allergies)
+                                        {
+                                            <span class="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs px-2.5 py-1 rounded-lg font-medium border border-red-200 dark:border-red-800">
+                                                @a.AllergenName — @a.Severity
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-xs text-[#617789]">No known allergies</p>
+                                }
+                            </div>
+
+                            <div>
+                                <h4 class="text-xs font-bold uppercase text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">medication</span> Current Medications
+                                </h4>
+                                @if (p.CurrentMedications.Any())
+                                {
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach (var m in p.CurrentMedications)
+                                        {
+                                            <span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-200 dark:border-blue-800">
+                                                @m.MedicationName@(m.Dosage != null ? $" {m.Dosage}" : "")
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-xs text-[#617789]">No current medications</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Right -->
+                        <div class="space-y-5">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">history</span> Medical History
+                                </h4>
+                                @if (p.MedicalHistories.Any())
+                                {
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach (var h in p.MedicalHistories)
+                                        {
+                                            <span class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs px-2.5 py-1 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800">
+                                                @h.ConditionName
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-xs text-[#617789]">No medical history on record</p>
+                                }
+                            </div>
+
+                            <div>
+                                <h4 class="text-xs font-bold uppercase text-[#617789] mb-2 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">event_note</span> Last Consultation
+                                </h4>
+                                @if (p.LastConsultation != null)
+                                {
+                                    var statusClass = p.LastConsultation.Status == "Completed"
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                        : p.LastConsultation.Status == "Pending"
+                                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+                                    <div class="flex items-center gap-3">
+                                        <p class="text-sm text-slate-700 dark:text-slate-300">
+                                            @p.LastConsultation.CreatedAt.ToString("MMM dd, yyyy")
+                                        </p>
+                                        <span class="text-xs font-bold px-2 py-0.5 rounded-full @statusClass">
+                                            @p.LastConsultation.Status
+                                        </span>
+                                        <a asp-controller="Consultation" asp-action="Details"
+                                           asp-route-id="@p.LastConsultation.ConsultationId"
+                                           class="text-primary text-xs font-bold hover:underline">
+                                            View →
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-xs text-[#617789]">No consultations yet</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function togglePatient(id) {
+            const panel = document.getElementById('panel-' + id);
+            const chevron = document.getElementById('chevron-' + id);
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !isHidden);
+            chevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    </script>
+}

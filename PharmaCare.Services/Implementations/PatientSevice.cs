@@ -240,5 +240,17 @@ namespace PharmaCare.Services.Implementations
                 throw;
             }
         }
+        public async Task<IEnumerable<Patient>> GetAllPatientsWithDetailsAsync()
+        {
+            try
+            {
+                return await _patientRepository.GetAllPatientsWithDetailsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all patients with details");
+                throw;
+            }
+        }
     }
 }

@@ -13,5 +13,6 @@ namespace PharmaCare.Services.Interfaces
         Task<bool> PatientExistsForUserAsync(string userId);
         Task<IEnumerable<Patient>> SearchPatientsAsync(string searchTerm);
         Task<Patient?> GetPatientWithDetailsAsync(int patientId);
+        Task<IEnumerable<Patient>> GetAllPatientsWithDetailsAsync();
     }
 }

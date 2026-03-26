@@ -7,6 +7,8 @@ using PharmaCare.Data.Models;
 using PharmaCare.Data.Repositories;
 using PharmaCare.Data.Repositories.Implementations;
 using PharmaCare.Data.Repositories.Interfaces;
+using PharmaCare.Models;
+using PharmaCare.Services;
 using PharmaCare.Services.Implementations;
 using PharmaCare.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
@@ -70,6 +72,12 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IAIAssessmentService, AIAssessmentService>();
 builder.Services.AddScoped<ConsultationChatService>();
 builder.Services.AddScoped<IMedicationService, MedicationService>();
+
+
+// Add this near your other service registrations
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddTransient<IEmailService, EmailService>();
+
 
 var app = builder.Build();
 

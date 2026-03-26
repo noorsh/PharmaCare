@@ -77,5 +77,84 @@ namespace PharmaCare.MVC.Controllers
                 return View(new PharmacistDashboardViewModel());
             }
         }
+        [Authorize(Roles = "Pharmacist,Admin")]
+public async Task<IActionResult> Patients(string? search, string? tab)
+{
+    try
+    {
+        var allPatients = await _patientService.GetAllPatientsWithDetailsAsync();
+
+        // Apply search
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.ToLower();
+            allPatients = allPatients.Where(p =>
+                (p.User?.FirstName + " " + p.User?.LastName).ToLower().Contains(q) ||
+                (p.City ?? "").ToLower().Contains(q) ||
+                (p.User?.PhoneNumber ?? "").Contains(q));
+        }
+
+        // Apply tab filter
+        if (tab == "Flagged")
+            allPatients = allPatients.Where(p => p.IsPregnant || p.IsBreastfeeding);
+        else if (tab == "HighRisk")
+            allPatients = allPatients.Where(p => p.Allergies.Any() || p.HasKidneyDisease || p.HasLiverDisease);
+
+        var rows = allPatients.Select(p => new PatientRowViewModel
+        {
+            PatientId         = p.PatientId,
+            FullName          = $"{p.User?.FirstName} {p.User?.LastName}",
+            Initials          = $"{p.User?.FirstName?[0]}{p.User?.LastName?[0]}".ToUpper(),
+            City              = p.City,
+            BloodType         = p.BloodType.HasValue
+                                    ? GetBloodTypeDisplay(p.BloodType.Value)
+                                    : null,
+            Age               = p.DateOfBirth != default
+                                    ? (int)((DateTime.UtcNow - p.DateOfBirth).TotalDays / 365.25)
+                                    : 0,
+            IsPregnant        = p.IsPregnant,
+            IsBreastfeeding   = p.IsBreastfeeding,
+            IsSmoker          = p.SmokingStatus == Enums.SmokingStatus.Current,
+            HasKidneyDisease  = p.HasKidneyDisease,
+            HasLiverDisease   = p.HasLiverDisease,
+            ConsultationCount = p.Consultations.Count,
+            AllergyCount      = p.Allergies.Count,
+            MedicationCount   = p.CurrentMedications.Count,
+            Allergies         = p.Allergies,
+            CurrentMedications = p.CurrentMedications,
+            MedicalHistories  = p.MedicalHistories.Where(m => m.IsActive),
+            LastConsultation  = p.Consultations.OrderByDescending(c => c.CreatedAt).FirstOrDefault()
+        }).ToList();
+
+        var viewModel = new PatientListViewModel
+        {
+            Patients     = rows,
+            TotalCount   = rows.Count,
+            SearchQuery  = search,
+            ActiveTab    = tab ?? "All"
+        };
+
+        return View(viewModel);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error loading patient list");
+        TempData["Error"] = "An error occurred while loading patients.";
+        return View(new PatientListViewModel());
+    }
+}
+
+    private static string GetBloodTypeDisplay(Enums.BloodType bloodType) => bloodType switch
+    {
+        Enums.BloodType.A_Positive  => "A+",
+        Enums.BloodType.A_Negative  => "A-",
+        Enums.BloodType.B_Positive  => "B+",
+        Enums.BloodType.B_Negative  => "B-",
+        Enums.BloodType.AB_Positive => "AB+",
+        Enums.BloodType.AB_Negative => "AB-",
+        Enums.BloodType.O_Positive  => "O+",
+        Enums.BloodType.O_Negative  => "O-",
+        _ => "—"
+    };
     }
 }
