@@ -73,7 +73,11 @@ builder.Services.AddScoped<IAIAssessmentService, AIAssessmentService>();
 builder.Services.AddScoped<ConsultationChatService>();
 builder.Services.AddScoped<IMedicationService, MedicationService>();
 
-
+builder.Services.AddHttpClient("AIService", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5001/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 // Add this near your other service registrations
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();

@@ -7,9 +7,9 @@
             new ChatStep
             {
                 StepNumber = 1,
-                Question = "What is your main complaint today?",
+                Question = "What symptoms are you experiencing?",
                 InputType = "text",
-                Placeholder = "e.g. I have a headache, fever, sore throat..."
+                Placeholder = "List your symptoms separated by commas — e.g. headache, fever, fatigue, nausea"
             },
             new ChatStep
             {
@@ -28,9 +28,9 @@
             new ChatStep
             {
                 StepNumber = 4,
-                Question = "Does anything make your symptoms better or worse?",
+                Question = "Do you have any of these additional symptoms?",
                 InputType = "text",
-                Placeholder = "e.g. Rest makes it better, walking makes it worse..."
+                Placeholder = "e.g. vomiting, chills, skin rash, loss of appetite, chest pain..."
             },
             new ChatStep
             {

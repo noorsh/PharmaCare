@@ -86,5 +86,16 @@ namespace PharmaCare.Data.Repositories.Implementations
                 .Include(p => p.CurrentMedications)
                 .FirstOrDefaultAsync(p => p.UserId == userId);
         }
+        public async Task<IEnumerable<Patient>> GetAllPatientsWithDetailsAsync()
+        {
+            return await _dbSet
+                .Include(p => p.User)
+                .Include(p => p.Allergies)
+                .Include(p => p.MedicalHistories)
+                .Include(p => p.CurrentMedications)
+                .Include(p => p.Consultations)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

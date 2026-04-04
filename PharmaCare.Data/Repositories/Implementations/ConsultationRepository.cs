@@ -58,6 +58,7 @@ namespace PharmaCare.Data.Repositories.Implementations
             return await _context.Consultations
                 .Include(c => c.Patient)
                 .Include(c => c.AIAssessment)
+                .Include(c => c.Patient.User)
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(count)
                 .ToListAsync();
@@ -70,6 +71,11 @@ namespace PharmaCare.Data.Repositories.Implementations
         public async Task AddRecommendationAsync(Recommendation recommendation)
         {
             await _context.Recommendations.AddAsync(recommendation);
+        }
+        public async Task<AIAssessment?> GetAIAssessmentByConsultationIdAsync(int consultationId)
+        {
+            return await _context.AIAssessments
+                .FirstOrDefaultAsync(a => a.ConsultationId == consultationId);
         }
     }
 }

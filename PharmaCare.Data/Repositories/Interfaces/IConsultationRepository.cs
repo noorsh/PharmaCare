@@ -11,5 +11,6 @@ namespace PharmaCare.Data.Repositories.Interfaces
         Task<IEnumerable<Consultation>> GetRecentWithDetailsAsync(int count);
         Task AddAIAssessmentAsync(AIAssessment assessment);       // ADD
         Task AddRecommendationAsync(Recommendation recommendation); // ADD
+        Task<AIAssessment?> GetAIAssessmentByConsultationIdAsync(int consultationId);
     }
 }

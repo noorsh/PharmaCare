@@ -45,5 +45,6 @@ namespace PharmaCare.Data.Models
         public ApplicationUser? Pharmacist { get; set; }
 
         public DateTime? ReviewedAt { get; set; }
+        
     }
 }
