@@ -4,7 +4,9 @@
     Layout = "_LayoutAuth";
     var c = Model.Consultation;
 }
-
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+</head>
 <div class="mb-6 flex items-center gap-3">
     <a asp-action="Queue" class="text-[#617789] hover:text-primary">
         <span class="material-symbols-outlined">arrow_back</span>
@@ -125,7 +127,7 @@
                     <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">
                         Recommended Medication <span class="text-[#617789] font-normal normal-case">(optional)</span>
                     </label>
-                    <select asp-for="InventoryId"
+                    <select asp-for="InventoryId" id="medicationSelect"
                             class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="">— No specific medication —</option>
                         @foreach (var med in Model.AvailableMedications)
@@ -275,8 +277,17 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <partial name="_ValidationScriptsPartial" />
     <script>
+        $(document).ready(function () {
+            $('#medicationSelect').select2({
+                placeholder: '— No specific medication —',
+                allowClear: true,
+                width: '100%'
+            });
+        });
         function toggleReferral(checkbox) {
             const box = document.getElementById('referralReasonBox');
             box.classList.toggle('hidden', !checkbox.checked);

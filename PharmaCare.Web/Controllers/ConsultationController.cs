@@ -475,7 +475,7 @@ namespace PharmaCare.MVC.Controllers
                 model.CurrentMedications = patient?.CurrentMedications ?? new List<CurrentMedication>();
                 model.Allergies          = patient?.Allergies ?? new List<Allergy>();
                 model.MedicalHistory     = patient?.MedicalHistories ?? new List<MedicalHistory>();
-                model.AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired);
+                model.AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired).DistinctBy(x=>x.MedicineName);
 
                 return View("Review", model);
             }
@@ -502,7 +502,7 @@ namespace PharmaCare.MVC.Controllers
                         model.CurrentMedications = patient?.CurrentMedications ?? new List<CurrentMedication>();
                         model.Allergies          = patient?.Allergies ?? new List<Allergy>();
                         model.MedicalHistory     = patient?.MedicalHistories ?? new List<MedicalHistory>();
-                        model.AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired);
+                        model.AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired).DistinctBy(x=>x.MedicineName);
 
                         return View("Review", model);
                     }
