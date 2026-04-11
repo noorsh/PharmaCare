@@ -81,7 +81,7 @@ namespace PharmaCare.MVC.Controllers
                 await _allergyService.CreateAllergyAsync(allergy);
 
                 TempData["Success"] = "Allergy added successfully!";
-                return RedirectToAction("Profile", "Patient");
+                return RedirectToAction("Index", "Allergy");
             }
             catch (InvalidOperationException ex)
             {
@@ -159,7 +159,7 @@ namespace PharmaCare.MVC.Controllers
                 if (success)
                 {
                     TempData["Success"] = "Allergy updated successfully!";
-                    return RedirectToAction("Profile", "Patient");
+                    return RedirectToAction("Index", "Allergy");
                 }
                 else
                 {

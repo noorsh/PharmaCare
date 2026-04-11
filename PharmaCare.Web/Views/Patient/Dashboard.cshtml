@@ -86,30 +86,27 @@
                     <span class="text-sm font-bold text-center">Start Consultation</span>
                 </a>
                 
-                <a asp-controller="Patient" asp-action="CurrentMedications" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                <a asp-controller="CurrentMedication" asp-action="Index" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
                     <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">medication</span>
                     <span class="text-sm font-bold text-center">Manage Medications</span>
                 </a>
                 
-                <a asp-controller="Patient" asp-action="EditProfile" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                <a asp-controller="Patient" asp-action="Profile" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
                     <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">manage_accounts</span>
                     <span class="text-sm font-bold text-center">Update Health Profile</span>
                 </a>
                 
-                <a asp-controller="Patient" asp-action="Allergies" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                <a asp-controller="Allergy" asp-action="Index" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
                     <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">health_and_safety</span>
                     <span class="text-sm font-bold text-center">Manage Allergies</span>
                 </a>
                 
-                <a asp-controller="Patient" asp-action="MedicalHistory" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
+                <a asp-controller="MedicalHistory" asp-action="Index" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
                     <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">history</span>
                     <span class="text-sm font-bold text-center">Medical History</span>
                 </a>
                 
-                <a asp-controller="Patient" asp-action="Profile" class="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-xl hover:border-primary transition-all group">
-                    <span class="material-symbols-outlined text-4xl text-primary mb-3 group-hover:scale-110 transition-transform">emergency</span>
-                    <span class="text-sm font-bold text-center">Emergency Contact</span>
-                </a>
+             
             </div>
         </section>
 
@@ -164,7 +161,7 @@
                         </li>
                     }
                 </ul>
-                <a asp-controller="Patient" asp-action="Alerts" class="mt-4 block w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors text-center">View All Alerts</a>
+                @* <a asp-controller="Patient" asp-action="Alerts" class="mt-4 block w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors text-center">View All Alerts</a> *@
             </div>
         }
 
