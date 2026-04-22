@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using PharmaCare.Business.Services.Interfaces;
 using PharmaCare.Data.Models;
 using PharmaCare.MVC.Models.ViewModels;
+using PharmaCare.Services;
 using PharmaCare.Services.Implementations;
 using PharmaCare.Services.Interfaces;
 
@@ -20,6 +21,7 @@ namespace PharmaCare.MVC.Controllers
         private readonly ILogger<ConsultationController> _logger;
         private readonly ConsultationChatService _chatService;
         private readonly IInventoryService _inventoryService;
+        private readonly IEmailService _emailService;
 
         public ConsultationController(
             IConsultationService consultationService,
@@ -28,6 +30,7 @@ namespace PharmaCare.MVC.Controllers
             UserManager<ApplicationUser> userManager,
             ILogger<ConsultationController> logger,
             ConsultationChatService chatService,
+            IEmailService emailService,
             IInventoryService inventoryService)
         {
             _consultationService = consultationService;
@@ -37,6 +40,7 @@ namespace PharmaCare.MVC.Controllers
             _logger = logger;
             _chatService = chatService;
             _inventoryService = inventoryService;
+            _emailService = emailService;
         }
 
         // ─── PATIENT ACTIONS ────────────────────────────────────────────
@@ -523,6 +527,22 @@ namespace PharmaCare.MVC.Controllers
 
                 if (success)
                 {
+                    // Send email notification to patient
+                    var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
+                    if (consultation?.Patient?.User?.Email != null)
+                    {
+                        var fullName = $"{consultation.Patient.User.FirstName} {consultation.Patient.User.LastName}";
+                        var consultationLink = Url.Action("Details", "Consultation", 
+                            new { id = id }, Request.Scheme);
+
+                        await _emailService.SendEmailAsync(
+                            consultation.Patient.User.Email,
+                            fullName,
+                            "PharmaCare Consultation Completed",
+                            ConsultationCompletedEmail(fullName, consultationLink ?? "")
+                        );
+                    }
+
                     TempData["Success"] = "Recommendation submitted successfully.";
                     return RedirectToAction(nameof(Queue));
                 }
@@ -565,7 +585,6 @@ namespace PharmaCare.MVC.Controllers
 
             return RedirectToAction(nameof(Queue));
         }
-
         // ─── INNER CLASSES ───────────────────────────────────────────────
 
         public class NextStepRequest
@@ -578,79 +597,124 @@ namespace PharmaCare.MVC.Controllers
         {
             public string? AnswersJson { get; set; }
         }
-        // GET: Consultation/History
-[Authorize(Roles = "Pharmacist,Admin")]
-public async Task<IActionResult> History(string? search, string? status, DateTime? dateFrom, DateTime? dateTo, int page = 1)
-{
-    try
+            // GET: Consultation/History
+    [Authorize(Roles = "Pharmacist,Admin")]
+    public async Task<IActionResult> History(string? search, string? status, DateTime? dateFrom, DateTime? dateTo, int page = 1)
     {
-        var all = await _consultationService.GetRecentConsultationsWithDetailsAsync(500);
-
-        var filtered = all
-            .Where(c => c.Status == "Completed" || c.Status == "Cancelled")
-            .AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(search))
+        try
         {
-            var q = search.ToLower();
-            filtered = filtered.Where(c =>
-                c.ConsultationId.ToString().Contains(q) ||
-                ($"{c.Patient?.User?.FirstName} {c.Patient?.User?.LastName}").ToLower().Contains(q));
-        }
+            var all = await _consultationService.GetRecentConsultationsWithDetailsAsync(500);
 
-        if (!string.IsNullOrWhiteSpace(status) && status != "All")
-            filtered = filtered.Where(c => c.Status == status);
+            var filtered = all
+                .Where(c => c.Status == "Completed" || c.Status == "Cancelled")
+                .AsEnumerable();
 
-        if (dateFrom.HasValue)
-            filtered = filtered.Where(c => c.CreatedAt.Date >= dateFrom.Value.Date);
-
-        if (dateTo.HasValue)
-            filtered = filtered.Where(c => c.CreatedAt.Date <= dateTo.Value.Date);
-
-        var ordered = filtered.OrderByDescending(c => c.CreatedAt).ToList();
-        const int pageSize = 10;
-
-        var paged = ordered
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(c => new PharmacistConsultationRow
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                ConsultationId  = c.ConsultationId,
-                PatientName     = $"{c.Patient?.User?.FirstName} {c.Patient?.User?.LastName}".Trim(),
-                PatientInitials = $"{c.Patient?.User?.FirstName?[0]}{c.Patient?.User?.LastName?[0]}".ToUpper(),
-                PatientCity     = c.Patient?.City,
-                Symptoms        = c.Symptoms,
-                SymptomSeverity = c.SymptomSeverity,
-                Status          = c.Status,
-                CreatedAt       = c.CreatedAt,
-                CompletedAt     = c.CompletedAt,
-                PharmacistName  = c.Pharmacist != null
-                    ? $"{c.Pharmacist.FirstName} {c.Pharmacist.LastName}".Trim()
-                    : "—"
-            })
-            .ToList();
+                var q = search.ToLower();
+                filtered = filtered.Where(c =>
+                    c.ConsultationId.ToString().Contains(q) ||
+                    ($"{c.Patient?.User?.FirstName} {c.Patient?.User?.LastName}").ToLower().Contains(q));
+            }
 
-        var viewModel = new PharmacistHistoryViewModel
+            if (!string.IsNullOrWhiteSpace(status) && status != "All")
+                filtered = filtered.Where(c => c.Status == status);
+
+            if (dateFrom.HasValue)
+                filtered = filtered.Where(c => c.CreatedAt.Date >= dateFrom.Value.Date);
+
+            if (dateTo.HasValue)
+                filtered = filtered.Where(c => c.CreatedAt.Date <= dateTo.Value.Date);
+
+            var ordered = filtered.OrderByDescending(c => c.CreatedAt).ToList();
+            const int pageSize = 10;
+
+            var paged = ordered
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new PharmacistConsultationRow
+                {
+                    ConsultationId  = c.ConsultationId,
+                    PatientName     = $"{c.Patient?.User?.FirstName} {c.Patient?.User?.LastName}".Trim(),
+                    PatientInitials = $"{c.Patient?.User?.FirstName?[0]}{c.Patient?.User?.LastName?[0]}".ToUpper(),
+                    PatientCity     = c.Patient?.City,
+                    Symptoms        = c.Symptoms,
+                    SymptomSeverity = c.SymptomSeverity,
+                    Status          = c.Status,
+                    CreatedAt       = c.CreatedAt,
+                    CompletedAt     = c.CompletedAt,
+                    PharmacistName  = c.Pharmacist != null
+                        ? $"{c.Pharmacist.FirstName} {c.Pharmacist.LastName}".Trim()
+                        : "—"
+                })
+                .ToList();
+
+            var viewModel = new PharmacistHistoryViewModel
+            {
+                Consultations = paged,
+                TotalCount    = ordered.Count,
+                CurrentPage   = page,
+                HistoryPageSize = pageSize,
+                SearchQuery   = search,
+                StatusFilter  = status,
+                DateFrom      = dateFrom,
+                DateTo        = dateTo
+            };
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
         {
-            Consultations = paged,
-            TotalCount    = ordered.Count,
-            CurrentPage   = page,
-            HistoryPageSize = pageSize,
-            SearchQuery   = search,
-            StatusFilter  = status,
-            DateFrom      = dateFrom,
-            DateTo        = dateTo
-        };
+            _logger.LogError(ex, "Error loading consultation history");
+            TempData["Error"] = "An error occurred while loading history.";
+            return View(new PharmacistHistoryViewModel());
+        }
+    }
 
-        return View(viewModel);
+
+     private string ConsultationCompletedEmail(string fullName, string consultationLink) => $"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h2 style="color: #1392ec; margin-bottom: 4px;">Consultation Completed ✓</h2>
+                <p style="color: #617789; font-size: 14px; margin: 0;">Your PharmaCare consultation summary</p>
+            </div>
+
+            <p>Hi <strong>{fullName}</strong>,</p>
+            <p style="color: #333;">
+                Your consultation has been completed. Our pharmacist has reviewed your case and 
+                their notes and recommendations are now available for you to review.
+            </p>
+
+            <div style="background: #f0f8ff; border-left: 4px solid #1392ec; padding: 16px; border-radius: 4px; margin: 24px 0;">
+                <p style="margin: 0; color: #1392ec; font-weight: bold;">What's next?</p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #333; line-height: 1.8;">
+                    <li>Log in to your PharmaCare account to view your consultation notes.</li>
+                    <li>Follow any recommendations provided by your pharmacist.</li>
+                    <li>Contact us if you have any further questions.</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{consultationLink}"
+                   style="background: #1392ec; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                    View Consultation
+                </a>
+            </div>
+
+            <p style="color: #617789; font-size: 13px;">
+                If you have any urgent medical concerns, please consult a healthcare professional 
+                or contact emergency services immediately.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+            <p style="color: #888; font-size: 12px; text-align: center;">
+                PharmaCare — Your health, our priority.<br/>
+                <span style="font-size: 11px;">If you did not request this consultation, please contact our support team.</span>
+            </p>
+        </div>
+        """;
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error loading consultation history");
-        TempData["Error"] = "An error occurred while loading history.";
-        return View(new PharmacistHistoryViewModel());
-    }
-}
-    }
+        
 }
 

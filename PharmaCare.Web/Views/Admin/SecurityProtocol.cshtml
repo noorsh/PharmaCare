@@ -1,0 +1,354 @@
+﻿@{
+    ViewData["Title"] = "Security Protocol";
+    Layout = "_LayoutAuth";
+}
+
+@* ── Page Header ─────────────────────────────────────────────────────────── *@
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div>
+        <div class="flex items-center gap-3 mb-1">
+            <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                <span class="material-symbols-outlined text-primary">security</span>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight">Security Protocol</h2>
+        </div>
+        <p class="text-[#617789] mt-1 text-sm ml-13">
+            PharmaCare platform security guidelines — last reviewed
+            <span class="font-semibold text-[#111518]">@DateTime.Now.ToString("MMMM yyyy")</span>
+        </p>
+    </div>
+    <a asp-action="Dashboard" asp-controller="Admin"
+       class="inline-flex items-center gap-2 text-sm font-semibold text-[#617789] hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-base">arrow_back</span>
+        Back to Dashboard
+    </a>
+</div>
+
+@* ── Warning Banner ───────────────────────────────────────────────────────── *@
+<div class="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-8 flex items-start gap-3">
+    <span class="material-symbols-outlined text-amber-500 shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1;">warning</span>
+    <div>
+        <p class="text-sm font-bold text-amber-800">Confidential — Admin Use Only</p>
+        <p class="text-xs text-amber-700 mt-0.5">
+            This document contains internal security guidelines. Do not share outside the administrative team.
+        </p>
+    </div>
+</div>
+
+@* ── Content Grid ─────────────────────────────────────────────────────────── *@
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    @* ── Main Sections ────────────────────────────────────────────────────── *@
+    <div class="lg:col-span-2 space-y-6">
+
+        @* 1 — Access Control *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-[#dbe1e6] bg-[#fcfcfd]">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-base">admin_panel_settings</span>
+                </div>
+                <h3 class="font-bold text-[#111518]">1. Access Control</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-[#617789] leading-relaxed">
+                    PharmaCare operates on a strict role-based access control (RBAC) model. Every user is assigned exactly one role at registration. Access to features and data is gated by role at both the controller and UI level.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-[#dbe1e6] rounded-lg overflow-hidden">
+                        <thead class="bg-[#f8fafc] border-b border-[#dbe1e6]">
+                            <tr>
+                                <th class="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[#617789]">Role</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[#617789]">Can Access</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[#617789]">Cannot Access</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#dbe1e6]">
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">Admin</span>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-[#617789]">User management, inventory, all reports, system settings</td>
+                                <td class="px-4 py-3 text-xs text-red-500">Cannot submit consultations or view patient medical records</td>
+                            </tr>
+                            <tr class="bg-[#fcfcfd]">
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-bold text-purple-700">Pharmacist</span>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-[#617789]">Consultation queue, AI assessments, recommendations, inventory view</td>
+                                <td class="px-4 py-3 text-xs text-red-500">Cannot manage users or access admin dashboard</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-primary">Patient</span>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-[#617789]">Own profile, consultations, medical history, allergies, medications</td>
+                                <td class="px-4 py-3 text-xs text-red-500">Cannot access other patients' data, pharmacist queue, or admin tools</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-red-50 border border-red-100 rounded-lg p-3">
+                    <p class="text-xs font-bold text-red-700 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">block</span>
+                        Never assign multiple roles to the same account. Role elevation must be approved and logged.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        @* 2 — Password Policy *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-[#dbe1e6] bg-[#fcfcfd]">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-base">lock</span>
+                </div>
+                <h3 class="font-bold text-[#111518]">2. Password Policy</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    @{
+                        var passwordRules = new[]
+                        {
+                            ("check_circle", "text-green-600", "Minimum 8 characters"),
+                            ("check_circle", "text-green-600", "At least one uppercase letter"),
+                            ("check_circle", "text-green-600", "At least one number"),
+                            ("check_circle", "text-green-600", "At least one special character"),
+                            ("cancel", "text-red-500", "Do not reuse last 5 passwords"),
+                            ("cancel", "text-red-500", "Do not share passwords between accounts"),
+                            ("cancel", "text-red-500", "Do not use patient names or dates"),
+                            ("schedule", "text-amber-500", "Admin accounts: rotate every 90 days"),
+                        };
+                    }
+                    @foreach (var (icon, color, rule) in passwordRules)
+                    {
+                        <div class="flex items-center gap-2 text-sm text-[#617789]">
+                            <span class="material-symbols-outlined @color text-base" style="font-variation-settings:'FILL' 1;">@icon</span>
+                            @rule
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* 3 — Data Privacy *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-[#dbe1e6] bg-[#fcfcfd]">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-base">privacy_tip</span>
+                </div>
+                <h3 class="font-bold text-[#111518]">3. Data Privacy</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-[#617789] leading-relaxed">
+                    Patient data is classified as <strong class="text-[#111518]">Protected Health Information (PHI)</strong>. All access is logged. The following rules apply to all staff with system access:
+                </p>
+                <ul class="space-y-2">
+                    @{
+                        var privacyRules = new[]
+                        {
+                            "Patient medical records, allergies, and consultation history are accessible only to the treating pharmacist and the patient themselves.",
+                            "Admin accounts can view aggregate statistics but cannot read individual consultation content.",
+                            "Patient data must never be exported to personal devices or shared via unencrypted channels.",
+                            "All data at rest is encrypted using AES-256. All data in transit uses TLS 1.2 or higher.",
+                            "Data retention: consultation records are retained for 7 years per healthcare compliance standards.",
+                        };
+                    }
+                    @foreach (var rule in privacyRules)
+                    {
+                        <li class="flex items-start gap-2 text-sm text-[#617789]">
+                            <span class="material-symbols-outlined text-primary text-base shrink-0 mt-0.5">arrow_right</span>
+                            @rule
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        @* 4 — Audit & Monitoring *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-[#dbe1e6] bg-[#fcfcfd]">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-base">manage_search</span>
+                </div>
+                <h3 class="font-bold text-[#111518]">4. Audit &amp; Monitoring</h3>
+            </div>
+            <div class="p-6 space-y-3">
+                <p class="text-sm text-[#617789] leading-relaxed">
+                    All administrative actions are logged with a timestamp, user ID, and action type. Logs are immutable and retained for 12 months.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-[#f8fafc] rounded-lg p-3 border border-[#dbe1e6] text-center">
+                        <span class="material-symbols-outlined text-primary text-2xl block mb-1">person_add</span>
+                        <p class="text-xs font-bold text-[#111518]">Account Creation</p>
+                        <p class="text-[10px] text-[#617789]">Logged with creator ID</p>
+                    </div>
+                    <div class="bg-[#f8fafc] rounded-lg p-3 border border-[#dbe1e6] text-center">
+                        <span class="material-symbols-outlined text-amber-500 text-2xl block mb-1">edit</span>
+                        <p class="text-xs font-bold text-[#111518]">Role Changes</p>
+                        <p class="text-[10px] text-[#617789]">Before &amp; after state saved</p>
+                    </div>
+                    <div class="bg-[#f8fafc] rounded-lg p-3 border border-[#dbe1e6] text-center">
+                        <span class="material-symbols-outlined text-red-500 text-2xl block mb-1">delete</span>
+                        <p class="text-xs font-bold text-[#111518]">Account Deletion</p>
+                        <p class="text-[10px] text-[#617789]">Soft-deleted, never purged</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* 5 — Session Policy *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-[#dbe1e6] bg-[#fcfcfd]">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-base">timer</span>
+                </div>
+                <h3 class="font-bold text-[#111518]">5. Session Policy</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-3">
+                    @{
+                        var sessionRules = new[]
+                        {
+                            ("schedule",        "text-primary",  "Sessions expire after 60 minutes of inactivity"),
+                            ("devices",         "text-primary",  "Only one active session per account is permitted"),
+                            ("no_accounts",     "text-red-500",  "Shared login credentials are strictly prohibited"),
+                            ("logout",          "text-amber-500","Always log out when leaving an unattended workstation"),
+                            ("vpn_key",         "text-green-600","Admin accounts must connect via the designated secure network"),
+                        };
+                    }
+                    @foreach (var (icon, color, rule) in sessionRules)
+                    {
+                        <div class="flex items-center gap-3 p-3 rounded-lg bg-[#f8fafc] border border-[#dbe1e6] text-sm text-[#617789]">
+                            <span class="material-symbols-outlined @color text-base shrink-0">@icon</span>
+                            @rule
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* 6 — Incident Response *@
+        <div class="rounded-xl border border-red-200 bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-red-200 bg-red-50">
+                <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-red-600 text-base">emergency</span>
+                </div>
+                <h3 class="font-bold text-red-800">6. Incident Response</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-[#617789] leading-relaxed">
+                    If you suspect a security breach, unauthorized access, or data leak — act immediately:
+                </p>
+                <ol class="space-y-3">
+                    @{
+                        var steps = new[]
+                        {
+                            ("Do not attempt to investigate alone", "Isolate the affected account or workstation immediately."),
+                            ("Notify the system administrator", "Report via the emergency contact below within 15 minutes of discovery."),
+                            ("Do not delete evidence", "Preserve all logs, screenshots, and access records for forensic review."),
+                            ("Document the timeline", "Record what was accessed, when, and by whom as accurately as possible."),
+                            ("Await containment instructions", "Do not restore access until the security team gives the all-clear."),
+                        };
+                    }
+                    @for (int i = 0; i < steps.Length; i++)
+                    {
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-700 text-xs font-black flex items-center justify-center">@(i + 1)</span>
+                            <div>
+                                <p class="text-sm font-bold text-[#111518]">@steps[i].Item1</p>
+                                <p class="text-xs text-[#617789]">@steps[i].Item2</p>
+                            </div>
+                        </li>
+                    }
+                </ol>
+            </div>
+        </div>
+
+    </div>
+
+    @* ── Sidebar ──────────────────────────────────────────────────────────── *@
+    <aside class="space-y-6">
+
+        @* Quick Reference *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#617789] mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">contact_phone</span>
+                Emergency Contacts
+            </h3>
+            <div class="space-y-3">
+                <div class="p-3 bg-red-50 border border-red-100 rounded-lg">
+                    <p class="text-xs font-bold text-red-700">Security Breach</p>
+                    <p class="text-xs text-red-600 mt-0.5">security@pharmacare.lb</p>
+                    <p class="text-xs text-red-600">+961 1 000 001</p>
+                </div>
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <p class="text-xs font-bold text-primary">System Administrator</p>
+                    <p class="text-xs text-[#617789] mt-0.5">admin@pharmacare.lb</p>
+                    <p class="text-xs text-[#617789]">+961 1 000 002</p>
+                </div>
+                <div class="p-3 bg-[#f8fafc] border border-[#dbe1e6] rounded-lg">
+                    <p class="text-xs font-bold text-[#111518]">Data Protection Officer</p>
+                    <p class="text-xs text-[#617789] mt-0.5">dpo@pharmacare.lb</p>
+                </div>
+            </div>
+        </div>
+
+        @* Compliance Checklist *@
+        <div class="rounded-xl border border-[#dbe1e6] bg-white p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#617789] mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">checklist</span>
+                Admin Compliance Checklist
+            </h3>
+            <div class="space-y-2">
+                @{
+                    var checklist = new[]
+                    {
+                        "Password rotated in last 90 days",
+                        "No shared credentials in use",
+                        "Inactive accounts reviewed monthly",
+                        "Audit logs reviewed weekly",
+                        "All new staff have completed security onboarding",
+                        "No patient data on personal devices",
+                    };
+                }
+                @foreach (var item in checklist)
+                {
+                    <label class="flex items-center gap-2 text-xs text-[#617789] cursor-pointer hover:text-[#111518] transition-colors">
+                        <input type="checkbox" class="rounded border-[#dbe1e6] text-primary focus:ring-primary" />
+                        @item
+                    </label>
+                }
+            </div>
+        </div>
+
+        @* Version Info *@
+        <div class="rounded-xl bg-primary/10 p-6">
+            <h3 class="text-sm font-bold text-primary mb-3">Admin Resource Hub</h3>
+            <ul class="space-y-2">
+                <li>
+                    <a asp-action="UserGuide" asp-controller="Admin"
+                       class="text-xs font-medium text-[#111518] hover:text-primary flex items-center gap-2 transition-colors">
+                        <span class="material-symbols-outlined text-sm">menu_book</span> User Guide
+                    </a>
+                </li>
+                <li>
+                    <span class="text-xs font-bold text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">security</span> Security Protocol
+                        <span class="ml-auto text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-full">Current</span>
+                    </span>
+                </li>
+                <li>
+                    <a asp-action="Reports" asp-controller="Admin"
+                       class="text-xs font-medium text-[#111518] hover:text-primary flex items-center gap-2 transition-colors">
+                        <span class="material-symbols-outlined text-sm">analytics</span> Custom Report Builder
+                    </a>
+                </li>
+            </ul>
+            <div class="mt-4 pt-4 border-t border-primary/20">
+                <p class="text-[10px] text-[#617789]">Document version <span class="font-bold text-[#111518]">1.0</span></p>
+                <p class="text-[10px] text-[#617789]">Last updated <span class="font-bold text-[#111518]">@DateTime.Now.ToString("MMMM yyyy")</span></p>
+            </div>
+        </div>
+
+    </aside>
+</div>

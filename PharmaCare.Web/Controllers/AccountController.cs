@@ -290,5 +290,128 @@ namespace PharmaCare.MVC.Controllers
 
             return View(model);
         }
-    }
+            
+        // GET: Account/ForgotPassword
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        // POST: Account/ForgotPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            // Always show the same confirmation page regardless of whether
+            // the email exists — prevents email enumeration attacks
+            if (user == null)
+            {
+                return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var resetLink = Url.Action(
+                "ResetPassword",
+                "Account",
+                new { email = model.Email, token },
+                Request.Scheme
+            );
+
+            var fullName = $"{user.FirstName} {user.LastName}";
+
+            await _emailService.SendEmailAsync(
+                model.Email,
+                fullName,
+                "Reset Your PharmaCare Password",
+                GetPasswordResetEmail(fullName, resetLink!)
+            );
+
+            _logger.LogInformation("Password reset email sent to {Email}", model.Email);
+
+            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+        }
+
+        // GET: Account/ForgotPasswordConfirmation
+        [HttpGet]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        // GET: Account/ResetPassword
+        [HttpGet]
+        public IActionResult ResetPassword(string email, string token)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
+                return RedirectToAction(nameof(Login));
+
+            var model = new ResetPasswordViewModel
+            {
+                Email = email,
+                Token = token
+            };
+
+            return View(model);
+        }
+
+        // POST: Account/ResetPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+            {
+                // Again — don't reveal whether the user exists
+                TempData["Success"] = "Password has been reset successfully. You can now log in.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Password reset successful for {Email}", model.Email);
+                TempData["Success"] = "Password has been reset successfully. You can now log in.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
+
+            return View(model);
+        }
+
+        // ─── Add this private helper alongside your existing email helpers ────────────
+
+        private string GetPasswordResetEmail(string fullName, string resetLink) => $"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <h2 style="color: #1392ec;">Reset Your Password 🔐</h2>
+                <p>Hi {fullName},</p>
+                <p>We received a request to reset your PharmaCare password. Click the button below to set a new password:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{resetLink}"
+                       style="background: #1392ec; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                        Reset Password
+                    </a>
+                </div>
+                <p style="color: #617789; font-size: 13px;">
+                    This link will expire in <strong>24 hours</strong>. If you didn't request a password reset, you can safely ignore this email — your password will not change.
+                </p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+                <p style="color: #888; font-size: 12px;">PharmaCare — Your health, our priority.</p>
+            </div>
+            """;
+            }
     }

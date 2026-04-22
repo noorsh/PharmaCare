@@ -59,6 +59,7 @@ namespace PharmaCare.Data.Repositories.Implementations
                 .Include(c => c.Patient)
                 .Include(c => c.AIAssessment)
                 .Include(c => c.Patient.User)
+                .Include(c => c.Pharmacist)
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(count)
                 .ToListAsync();
