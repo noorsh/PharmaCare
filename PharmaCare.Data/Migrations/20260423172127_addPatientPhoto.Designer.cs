@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PharmaCare.Data;
@@ -11,9 +12,11 @@ using PharmaCare.Data;
 namespace PharmaCare.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260423172127_addPatientPhoto")]
+    partial class addPatientPhoto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -509,56 +512,6 @@ namespace PharmaCare.Data.Migrations
                     b.ToTable("MedicalHistories");
                 });
 
-            modelBuilder.Entity("PharmaCare.Data.Models.MedicationOrder", b =>
-                {
-                    b.Property<int>("OrderId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("OrderId"));
-
-                    b.Property<int>("ConsultationId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("DeliveryAddress")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime?>("DispatchedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("InventoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OrderedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("PatientUserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PharmacistNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.HasKey("OrderId");
-
-                    b.HasIndex("ConsultationId")
-                        .IsUnique();
-
-                    b.HasIndex("InventoryId");
-
-                    b.HasIndex("PatientUserId");
-
-                    b.ToTable("MedicationOrders");
-                });
-
             modelBuilder.Entity("PharmaCare.Data.Models.Patient", b =>
                 {
                     b.Property<int>("PatientId")
@@ -815,33 +768,6 @@ namespace PharmaCare.Data.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("PharmaCare.Data.Models.MedicationOrder", b =>
-                {
-                    b.HasOne("PharmaCare.Data.Models.Consultation", "Consultation")
-                        .WithOne("MedicationOrder")
-                        .HasForeignKey("PharmaCare.Data.Models.MedicationOrder", "ConsultationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PharmaCare.Data.Models.Inventory", "Inventory")
-                        .WithMany()
-                        .HasForeignKey("InventoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PharmaCare.Data.Models.ApplicationUser", "Patient")
-                        .WithMany()
-                        .HasForeignKey("PatientUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Consultation");
-
-                    b.Navigation("Inventory");
-
-                    b.Navigation("Patient");
-                });
-
             modelBuilder.Entity("PharmaCare.Data.Models.Patient", b =>
                 {
                     b.HasOne("PharmaCare.Data.Models.ApplicationUser", "User")
@@ -886,8 +812,6 @@ namespace PharmaCare.Data.Migrations
             modelBuilder.Entity("PharmaCare.Data.Models.Consultation", b =>
                 {
                     b.Navigation("AIAssessment");
-
-                    b.Navigation("MedicationOrder");
 
                     b.Navigation("Recommendation");
                 });

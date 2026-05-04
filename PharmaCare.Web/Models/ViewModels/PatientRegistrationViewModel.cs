@@ -105,5 +105,8 @@ namespace PharmaCare.MVC.Models.ViewModels
         [Display(Name = "Additional Notes")]
         [StringLength(1000)]
         public string? AdditionalNotes { get; set; }
+        [Required(ErrorMessage = "Profile photo is required")]
+        [Display(Name = "Profile Photo")]
+        public IFormFile ProfilePhoto { get; set; }
     }
 }

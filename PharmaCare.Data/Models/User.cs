@@ -21,6 +21,8 @@ namespace PharmaCare.Data.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public bool IsActive { get; set; } = true;
+        [MaxLength(500)]
+        public string? ProfilePhotoUrl { get; set; }
 
         // Navigation property - if user is a patient
         public Patient? Patient { get; set; }

@@ -38,6 +38,7 @@ namespace PharmaCare.Data.Models
         // Navigation Properties
         public AIAssessment? AIAssessment { get; set; }
         public Recommendation? Recommendation { get; set; }
+        public MedicationOrder? MedicationOrder { get; set; }
 
         public string? PharmacistId { get; set; } // ASP.NET Identity UserId (string)
 

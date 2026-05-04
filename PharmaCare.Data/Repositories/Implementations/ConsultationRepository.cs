@@ -16,9 +16,12 @@ namespace PharmaCare.Data.Repositories.Implementations
         public async Task<Consultation?> GetConsultationWithDetailsAsync(int id)
         {
             return await _context.Consultations
-                .Include(c => c.Patient)
+                .Include(c => c.Patient).ThenInclude(p => p.User)
                 .Include(c => c.AIAssessment)
-                .Include(c => c.Recommendation)
+                .Include(c => c.Recommendation).ThenInclude(r => r.Inventory)
+                .Include(c => c.Recommendation).ThenInclude(r => r.Pharmacist)
+                .Include(c => c.Pharmacist)
+                .Include(c => c.MedicationOrder)
                 .FirstOrDefaultAsync(c => c.ConsultationId == id);
         }
 
@@ -27,16 +30,21 @@ namespace PharmaCare.Data.Repositories.Implementations
             return await _context.Consultations
                 .Include(c => c.AIAssessment)
                 .Include(c => c.Recommendation)
+                .ThenInclude(r => r.Inventory)        // for medication name in dispatched notif
+                .Include(c => c.Pharmacist)               // ← needed for pharmacistName
+                .Include(c => c.MedicationOrder)          // ← needed for dispatched check
+                .ThenInclude(o => o.Inventory)        // ← needed for medicine name
                 .Where(c => c.PatientId == patientId)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
         }
-
+        
         public async Task<IEnumerable<Consultation>> GetPendingConsultationsWithDetailsAsync()
         {
             return await _context.Consultations
-                .Include(c => c.Patient)
+                .Include(c => c.Patient).ThenInclude(p => p.User)
                 .Include(c => c.AIAssessment)
+                .Include(c => c.Pharmacist)
                 .Where(c => c.Status == "Pending" || c.Status == "UnderReview")
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -77,6 +85,41 @@ namespace PharmaCare.Data.Repositories.Implementations
         {
             return await _context.AIAssessments
                 .FirstOrDefaultAsync(a => a.ConsultationId == consultationId);
+        }
+        public async Task AddMedicationOrderAsync(MedicationOrder order)
+        {
+            await _context.MedicationOrders.AddAsync(order);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId)
+        {
+            return await _context.MedicationOrders
+                .Include(o => o.Inventory)
+                .Include(o => o.Patient)
+                .FirstOrDefaultAsync(o => o.ConsultationId == consultationId);
+        }
+
+        public async Task UpdateMedicationOrderAsync(MedicationOrder order)
+        {
+            _context.MedicationOrders.Update(order);
+            await _context.SaveChangesAsync();
+        }
+        public async Task<MedicationOrder?> GetOrderByIdAsync(int orderId)
+        {
+            return await _context.MedicationOrders
+                .Include(o => o.Inventory)
+                .Include(o => o.Patient)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+        }
+        public async Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync()
+        {
+            return await _context.MedicationOrders
+                .Include(o => o.Inventory)
+                .Include(o => o.Patient)
+                .Where(o => o.Status == "Pending")
+                .OrderByDescending(o => o.OrderedAt)
+                .ToListAsync();
         }
     }
 }

@@ -3,9 +3,10 @@
     ViewData["Title"] = "Consultation Details";
     Layout = "_LayoutAuth";
 
-    var c = Model.Consultation;
-    var ai = Model.AIAssessment;
-    var rec = c.Recommendation;
+    var c     = Model.Consultation;
+    var ai    = Model.AIAssessment;
+    var rec   = c.Recommendation;
+    var order = Model.MedicationOrder;
 
     var statusBorder = c.Status switch
     {
@@ -40,6 +41,11 @@
         "Mild"     => "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30",
         _          => "bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200"
     };
+
+    bool canOrder = User.IsInRole("Patient")
+                   && c.Status == "Completed"
+                   && rec?.InventoryId != null
+                   && order == null;
 }
 
 <!-- Back + Title -->
@@ -52,7 +58,15 @@
             Back to My Consultations
         </a>
     }
-    
+    else
+    {
+        <a asp-action="History"
+           class="flex items-center gap-1 text-primary text-sm font-medium mb-4 hover:underline w-fit">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+            Back to History
+        </a>
+    }
+
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="space-y-1">
             <div class="flex items-center gap-3 flex-wrap">
@@ -60,6 +74,17 @@
                 <span class="bg-slate-100 dark:bg-slate-800 text-[#617789] text-xs font-bold px-2 py-1 rounded">
                     #PC-@c.ConsultationId.ToString("D4")
                 </span>
+                @if (order != null)
+                {
+                    var orderBadge = order.Status == "Dispatched"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200";
+                    var orderIcon = order.Status == "Dispatched" ? "local_shipping" : "shopping_bag";
+                    <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border @orderBadge">
+                        <span class="material-symbols-outlined text-sm">@orderIcon</span>
+                        Order @order.Status
+                    </span>
+                }
             </div>
             <p class="text-[#617789] dark:text-slate-400">View the summary and professional recommendations for your consultation.</p>
         </div>
@@ -104,6 +129,26 @@
                 </span>
             }
         </div>
+
+        @if (c.Pharmacist != null)
+        {
+            <div class="mt-4 pt-4 border-t border-[#e5e7eb] dark:border-[#2d3a4b] flex items-center gap-2 text-sm text-[#617789]">
+                <span class="material-symbols-outlined text-base">stethoscope</span>
+                @if (c.Status == "UnderReview")
+                {
+                    <span>Currently being reviewed by <strong class="text-slate-800 dark:text-white">@c.Pharmacist.FirstName @c.Pharmacist.LastName</strong></span>
+                }
+                else if (c.Status == "Completed")
+                {
+                    <span>Reviewed by <strong class="text-slate-800 dark:text-white">@c.Pharmacist.FirstName @c.Pharmacist.LastName</strong>
+                        @if (c.ReviewedAt.HasValue)
+                        {
+                            <text> on @c.ReviewedAt.Value.ToString("MMM dd, yyyy")</text>
+                        }
+                    </span>
+                }
+            </div>
+        }
     </section>
 
     <!-- 2. AI Assessment Card -->
@@ -155,7 +200,8 @@
                 <div class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-[#101a22] rounded-lg">
                     <span class="material-symbols-outlined text-[#617789] text-lg shrink-0">info</span>
                     <p class="text-xs text-[#617789] leading-normal">
-                        AI assessments are for informational purposes only and should be reviewed by a qualified pharmacist. Do not use this as a substitute for professional medical advice.
+                        AI assessments are for informational purposes only and should be reviewed by a qualified pharmacist.
+                        Do not use this as a substitute for professional medical advice.
                     </p>
                 </div>
             </div>
@@ -243,7 +289,190 @@
         </section>
     }
 
-    <!-- 4. Additional Information Card -->
+    <!-- 4. Medication Order Section -->
+    @if (c.Status == "Completed" && rec?.InventoryId != null)
+    {
+        <section class="bg-white dark:bg-[#1a2632] rounded-xl shadow-sm border border-[#e5e7eb] dark:border-[#2d3a4b] overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#e5e7eb] dark:border-[#2d3a4b] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">local_shipping</span>
+                    <span class="font-bold text-sm uppercase tracking-wider">Medication Delivery</span>
+                </div>
+                @if (order != null)
+                {
+                    var badgeCss = order.Status == "Dispatched"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+                    <span class="text-xs font-bold px-3 py-1 rounded-full @badgeCss">
+                        @order.Status
+                    </span>
+                }
+            </div>
+
+            <div class="p-6 md:p-8">
+
+                @* ── No order yet — show order form to patient ── *@
+                @if (order == null && User.IsInRole("Patient"))
+                {
+                    <p class="text-[#617789] text-sm mb-4">
+                        Would you like to have <strong class="text-slate-800 dark:text-white">@rec.Inventory?.MedicineName</strong> delivered to your address?
+                    </p>
+
+                    <div id="orderFormContainer">
+                        <button type="button" onclick="showOrderForm()"
+                                class="flex items-center gap-2 bg-primary text-white font-bold px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-all">
+                            <span class="material-symbols-outlined text-lg">shopping_bag</span>
+                            Order Medication
+                        </button>
+                    </div>
+
+                    <div id="orderForm" class="hidden mt-4">
+                        <form asp-controller="Order" asp-action="Place" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="consultationId" value="@c.ConsultationId" />
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                        Delivery Address <span class="text-red-500">*</span>
+                                    </label>
+                                    <textarea name="deliveryAddress" rows="2" required
+                                              placeholder="Enter your full delivery address..."
+                                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-slate-50 dark:bg-[#0f1923] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"></textarea>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <button type="submit"
+                                            class="flex items-center gap-2 bg-primary text-white font-bold px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-all">
+                                        <span class="material-symbols-outlined text-lg">check</span>
+                                        Confirm Order
+                                    </button>
+                                    <button type="button" onclick="hideOrderForm()"
+                                            class="px-5 py-2.5 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] text-[#617789] font-semibold hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-all">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                }
+
+                @* ── Order exists — show status to patient ── *@
+                @if (order != null && User.IsInRole("Patient"))
+                {
+                    <div class="flex items-start gap-4">
+                        <div class="@(order.Status == "Dispatched" ? "bg-emerald-100 dark:bg-emerald-900/30" : "bg-amber-100 dark:bg-amber-900/30") w-12 h-12 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined @(order.Status == "Dispatched" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400") text-2xl">
+                                @(order.Status == "Dispatched" ? "local_shipping" : "inventory")
+                            </span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 dark:text-white">
+                                @(order.Status == "Dispatched" ? "Your medication has been dispatched!" : "Your order is being prepared")
+                            </p>
+                            <p class="text-sm text-[#617789] mt-1">
+                                <span class="material-symbols-outlined text-sm align-text-bottom">location_on</span>
+                                @order.DeliveryAddress
+                            </p>
+                            <p class="text-xs text-[#617789] mt-1">Ordered on @order.OrderedAt.ToString("MMM dd, yyyy")</p>
+                            @if (order.Status == "Dispatched" && !string.IsNullOrEmpty(order.PharmacistNotes))
+                            {
+                                <p class="text-sm text-emerald-700 dark:text-emerald-400 mt-2 font-medium">
+                                    Note: @order.PharmacistNotes
+                                </p>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @* ── Order exists — show to pharmacist with dispatch option ── *@
+                @if (order != null && (User.IsInRole("Pharmacist") || User.IsInRole("Admin")))
+                {
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="bg-amber-100 dark:bg-amber-900/30 w-12 h-12 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl">shopping_bag</span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 dark:text-white">Patient requested medication delivery</p>
+                            <p class="text-sm text-[#617789] mt-1">
+                                <span class="material-symbols-outlined text-sm align-text-bottom">medication</span>
+                                @rec.Inventory?.MedicineName @(!string.IsNullOrEmpty(rec.Dosage) ? $"— {rec.Dosage}" : "")
+                            </p>
+                            <p class="text-sm text-[#617789] mt-1">
+                                <span class="material-symbols-outlined text-sm align-text-bottom">location_on</span>
+                                @order.DeliveryAddress
+                            </p>
+                            <p class="text-xs text-[#617789] mt-1">Ordered on @order.OrderedAt.ToString("MMM dd, yyyy 'at' HH:mm")</p>
+                        </div>
+                    </div>
+
+                    @if (order.Status == "Pending")
+                    {
+                        <div id="dispatchFormContainer">
+                            <button type="button" onclick="showDispatchForm()"
+                                    class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg transition-all">
+                                <span class="material-symbols-outlined text-lg">local_shipping</span>
+                                Mark as Dispatched
+                            </button>
+                        </div>
+
+                        <div id="dispatchForm" class="hidden mt-4">
+                            <form asp-controller="Order" asp-action="Dispatch" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@order.OrderId" />
+                                <input type="hidden" name="consultationId" value="@c.ConsultationId" />
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                            Note to Patient (optional)
+                                        </label>
+                                        <input type="text" name="pharmacistNotes"
+                                               placeholder="e.g. Expected delivery within 24 hours..."
+                                               class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-slate-50 dark:bg-[#0f1923] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                                    </div>
+
+                                    <div class="flex gap-3">
+                                        <button type="submit"
+                                                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg transition-all">
+                                            <span class="material-symbols-outlined text-lg">check</span>
+                                            Confirm Dispatch
+                                        </button>
+                                        <button type="button" onclick="hideDispatchForm()"
+                                                class="px-5 py-2.5 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] text-[#617789] font-semibold hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-all">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            Dispatched on @order.DispatchedAt?.ToString("MMM dd, yyyy 'at' HH:mm")
+                        </div>
+                        @if (!string.IsNullOrEmpty(order.PharmacistNotes))
+                        {
+                            <p class="text-sm text-[#617789] mt-1">Note sent: @order.PharmacistNotes</p>
+                        }
+                    }
+                }
+
+                @* ── No order — show info to pharmacist ── *@
+                @if (order == null && (User.IsInRole("Pharmacist") || User.IsInRole("Admin")))
+                {
+                    <p class="text-sm text-[#617789]">
+                        <span class="material-symbols-outlined text-sm align-text-bottom">info</span>
+                        Patient has not requested medication delivery yet.
+                    </p>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- 5. Additional Information Card -->
     @if (!string.IsNullOrEmpty(c.AdditionalInformation))
     {
         <section class="bg-white dark:bg-[#1a2632] rounded-xl shadow-sm border border-[#e5e7eb] dark:border-[#2d3a4b] p-6 md:p-8">
@@ -256,10 +485,11 @@
     }
 
 </div>
+
 @if (User.IsInRole("Patient"))
 {
     <!-- Fixed Bottom Action Bar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-[#1a2632]/90 backdrop-blur-md border-t border-[#e5e7eb] dark:border-[#2d3a4b] py-4 px-6 z-40">
+    <div class="fixed bottom-0 left-0 lg:left-64 right-0 bg-white/90 dark:bg-[#1a2632]/90 backdrop-blur-md border-t border-[#e5e7eb] dark:border-[#2d3a4b] py-4 px-6 z-40">
         <div class="max-w-4xl mx-auto flex flex-col md:flex-row gap-3 items-center justify-between">
             <a asp-action="MyConsultations"
                class="w-full md:w-auto px-6 py-3 rounded-lg text-[#617789] font-bold hover:bg-slate-100 dark:hover:bg-[#101a22] transition-colors flex items-center justify-center gap-2">
@@ -291,4 +521,28 @@
             </div>
         </div>
     </div>
+}
+
+@section Scripts {
+    <script>
+        function showOrderForm() {
+            document.getElementById('orderFormContainer').classList.add('hidden');
+            document.getElementById('orderForm').classList.remove('hidden');
+        }
+
+        function hideOrderForm() {
+            document.getElementById('orderForm').classList.add('hidden');
+            document.getElementById('orderFormContainer').classList.remove('hidden');
+        }
+
+        function showDispatchForm() {
+            document.getElementById('dispatchFormContainer').classList.add('hidden');
+            document.getElementById('dispatchForm').classList.remove('hidden');
+        }
+
+        function hideDispatchForm() {
+            document.getElementById('dispatchForm').classList.add('hidden');
+            document.getElementById('dispatchFormContainer').classList.remove('hidden');
+        }
+    </script>
 }

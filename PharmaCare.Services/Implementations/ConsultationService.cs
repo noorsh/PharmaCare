@@ -337,11 +337,15 @@ namespace PharmaCare.Services.Implementations
             try
             {
                 var consultation = await _consultationRepository.GetByIdAsync(consultationId);
-                if (consultation == null || consultation.PharmacistId != pharmacistId)
+                if (consultation == null)
                 {
-                    _logger.LogWarning($"Cannot submit recommendation: consultation {consultationId} not found or not assigned to pharmacist {pharmacistId}");
+                    _logger.LogWarning($"Cannot submit recommendation: consultation {consultationId} not found");
                     return false;
                 }
+
+                // Reassign to the submitting pharmacist in case a different one is completing the review
+                consultation.PharmacistId = pharmacistId;
+                consultation.ReviewedAt = DateTime.UtcNow;
 
                 recommendation.ConsultationId = consultationId;
                 recommendation.PharmacistId = pharmacistId;
@@ -376,5 +380,78 @@ namespace PharmaCare.Services.Implementations
                 throw;
             }
         }
+        
+        public async Task<bool> PlaceOrderAsync(int consultationId, string patientUserId, string deliveryAddress)
+        {
+        try
+        {
+            var consultation = await _consultationRepository.GetConsultationWithDetailsAsync(consultationId);
+            if (consultation == null) return false;
+
+            // Must be completed and have a medication recommended
+            if (consultation.Status != "Completed") return false;
+            if (consultation.Recommendation?.InventoryId == null) return false;
+
+            // Check no existing order
+            var existing = await _consultationRepository.GetOrderByConsultationIdAsync(consultationId);
+            if (existing != null) return false;
+
+            var order = new MedicationOrder
+            {
+                ConsultationId  = consultationId,
+                InventoryId     = consultation.Recommendation.InventoryId.Value,
+                PatientUserId   = patientUserId,
+                DeliveryAddress = deliveryAddress,
+                Status          = "Pending",
+                OrderedAt       = DateTime.UtcNow
+            };
+
+            await _consultationRepository.AddMedicationOrderAsync(order);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error placing order for consultation {consultationId}");
+            return false;
+        } 
+        }
+
+        public async Task<bool> DispatchOrderAsync(int orderId, string pharmacistNotes)
+        {
+            try
+            {
+                var order = await _consultationRepository.GetOrderByIdAsync(orderId);
+                if (order == null || order.Status != "Pending") return false;
+
+                order.Status          = "Dispatched";
+                order.DispatchedAt    = DateTime.UtcNow;
+                order.PharmacistNotes = pharmacistNotes;
+
+                await _consultationRepository.UpdateMedicationOrderAsync(order);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error dispatching order {orderId}");
+                return false;
+            }
+        }
+
+    public async Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId)
+    {
+        return await _consultationRepository.GetOrderByConsultationIdAsync(consultationId);
+    } 
+    public async Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync()
+    {
+        try
+        {
+            return await _consultationRepository.GetPendingOrdersAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving pending medication orders");
+            throw;
+        }
+    }
     }
 }

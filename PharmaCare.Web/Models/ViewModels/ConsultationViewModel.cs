@@ -8,6 +8,7 @@ namespace PharmaCare.MVC.Models.ViewModels
         public Consultation Consultation { get; set; }
         public AIAssessment? AIAssessment { get; set; }
         public bool IsPatientView { get; set; } = true;
+        public MedicationOrder? MedicationOrder { get; set; }
     }
 
     public class PharmacistQueueViewModel

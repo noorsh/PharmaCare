@@ -20,6 +20,7 @@ namespace PharmaCare.Data
         public DbSet<AIAssessment> AIAssessments { get; set; }
         public DbSet<Recommendation> Recommendations { get; set; }
         public DbSet<Inventory> Inventories { get; set; }
+        public DbSet<MedicationOrder> MedicationOrders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

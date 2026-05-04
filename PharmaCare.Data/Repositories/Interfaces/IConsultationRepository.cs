@@ -12,5 +12,11 @@ namespace PharmaCare.Data.Repositories.Interfaces
         Task AddAIAssessmentAsync(AIAssessment assessment);       // ADD
         Task AddRecommendationAsync(Recommendation recommendation); // ADD
         Task<AIAssessment?> GetAIAssessmentByConsultationIdAsync(int consultationId);
+        
+        Task AddMedicationOrderAsync(MedicationOrder order);
+        Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId);
+        Task UpdateMedicationOrderAsync(MedicationOrder order);
+        Task<MedicationOrder?> GetOrderByIdAsync(int orderId);
+        Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync();
     }
 }

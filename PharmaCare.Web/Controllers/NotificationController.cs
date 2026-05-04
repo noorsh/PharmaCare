@@ -33,6 +33,7 @@ namespace PharmaCare.MVC.Controllers
         {
             var notifications = new List<object>();
 
+            // ── Pending consultations ────────────────────────────────
             var pending     = await _consultationService.GetPendingConsultationsWithDetailsAsync();
             var pendingList = pending.Where(c => c.Status == "Pending").ToList();
 
@@ -54,8 +55,33 @@ namespace PharmaCare.MVC.Controllers
                 });
             }
 
+            // ── Pending medication orders ────────────────────────────
+            var pendingOrders = await _consultationService.GetPendingOrdersAsync();
+            var pendingOrdersList = pendingOrders.ToList();
+
+            foreach (var o in pendingOrdersList.Take(3))
+            {
+                var patientName = o.Patient != null
+                    ? $"{o.Patient.FirstName} {o.Patient.LastName}"
+                    : "A patient";
+
+                notifications.Add(new
+                {
+                    type    = "order",
+                    icon    = "shopping_bag",
+                    color   = "amber",
+                    title   = "Medication Order",
+                    message = $"{patientName} requested delivery of {o.Inventory?.MedicineName ?? "medication"}",
+                    time    = GetTimeAgo(o.OrderedAt),
+                    link    = Url.Action("Details", "Consultation", new { id = o.ConsultationId })
+                });
+            }
+
+            // ── Low stock alerts ─────────────────────────────────────
             var lowStock = await _inventoryService.GetLowStockItemsAsync();
-            foreach (var item in lowStock.Take(3))
+            var lowStockList = lowStock.ToList();
+
+            foreach (var item in lowStockList.Take(3))
             {
                 notifications.Add(new
                 {
@@ -63,15 +89,17 @@ namespace PharmaCare.MVC.Controllers
                     icon    = "inventory",
                     color   = "amber",
                     title   = "Low Stock Alert",
-                    message = $"{(string)item.MedicineName} — only {(int)item.QuantityInStock} units left",
+                    message = $"{item.MedicineName} — only {item.QuantityInStock} units left",
                     time    = "Now",
                     link    = Url.Action("Index", "Inventory")
                 });
             }
 
+            var totalCount = pendingList.Count + pendingOrdersList.Count + lowStockList.Count;
+
             return Json(new
             {
-                count         = pendingList.Count + lowStock.Count(),
+                count         = totalCount,
                 notifications = notifications.Take(8)
             });
         }
@@ -115,6 +143,21 @@ namespace PharmaCare.MVC.Controllers
                         time    = GetTimeAgo(c.CompletedAt.Value),
                         link    = Url.Action("Details", "Consultation", new { id = c.ConsultationId })
                     });
+
+                    // ── Dispatched order notification for patient ────
+                    if (c.MedicationOrder?.Status == "Dispatched" && c.MedicationOrder.DispatchedAt.HasValue)
+                    {
+                        notifications.Add(new
+                        {
+                            type    = "dispatched",
+                            icon    = "local_shipping",
+                            color   = "green",
+                            title   = "Medication Dispatched",
+                            message = $"Your {c.MedicationOrder.Inventory?.MedicineName ?? "medication"} is on its way!",
+                            time    = GetTimeAgo(c.MedicationOrder.DispatchedAt.Value),
+                            link    = Url.Action("Details", "Consultation", new { id = c.ConsultationId })
+                        });
+                    }
                 }
                 else if (c.Status == "UnderReview" && c.ReviewedAt.HasValue)
                 {

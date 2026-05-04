@@ -1,4 +1,6 @@
-﻿using PharmaCare.Data.Models;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using PharmaCare.Data.Models;
 
 namespace PharmaCare.Services.Interfaces
 {
@@ -14,5 +16,7 @@ namespace PharmaCare.Services.Interfaces
         Task<IEnumerable<Patient>> SearchPatientsAsync(string searchTerm);
         Task<Patient?> GetPatientWithDetailsAsync(int patientId);
         Task<IEnumerable<Patient>> GetAllPatientsWithDetailsAsync();
+        Task<string?> SaveProfilePhotoAsync(IFormFile file, string webRootPath);
+        void DeleteProfilePhoto(string? photoUrl, string webRootPath);
     }
 }

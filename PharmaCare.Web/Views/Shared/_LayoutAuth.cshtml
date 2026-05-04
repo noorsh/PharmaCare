@@ -1,4 +1,10 @@
-﻿<!DOCTYPE html>
+﻿@inject Microsoft.AspNetCore.Identity.UserManager<PharmaCare.Data.Models.ApplicationUser> _userManager
+@{
+    var _currentUser = await _userManager.GetUserAsync(User);
+    var _photoUrl    = _currentUser?.ProfilePhotoUrl;
+    var _initials    = (_currentUser?.FirstName?.Substring(0, 1) ?? User.Identity?.Name?.Substring(0, 1) ?? "U").ToUpper();
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -149,13 +155,18 @@
                         else if (User.IsInRole("Admin"))        { <text>Administrator</text>  }
                     </p>
                 </div>
-                <div class="size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
-                    @(User.Identity.Name?.Substring(0, 1).ToUpper() ?? "U")
-                </div>
+                @if (!string.IsNullOrEmpty(_photoUrl))
+                {
+                    <img src="@_photoUrl" alt="@_initials" class="size-10 rounded-full object-cover" />
+                }
+                else
+                {
+                    <div class="size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg select-none">@_initials</div>
+                }
                 <span class="material-symbols-outlined text-sm text-[#617789]">expand_more</span>
             </div>
 
-            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg shadow-lg overflow-hidden">
+            <div class="hidden group-hover:block absolute right-0 pt-2 w-48 bg-white dark:bg-[#1a2632] border border-[#e5e7eb] dark:border-[#2d3a4b] rounded-lg shadow-lg overflow-hidden">
                 @if (User.IsInRole("Patient"))
                 {
                     <a asp-controller="Patient" asp-action="Profile"
@@ -165,7 +176,7 @@
                     </a>
                     <a asp-controller="Patient" asp-action="Edit"
                        class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#f0f2f4] dark:hover:bg-[#243341] transition-colors">
-                        <span class="material-symbols-outlined text-sm">edit</span>
+                        <span class="materTial-symbols-outlined text-sm">edit</span>
                         Edit Profile
                     </a>
                 }

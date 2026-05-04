@@ -55,6 +55,7 @@ namespace PharmaCare.MVC.Controllers
 
             ViewBag.PatientName = patient.User?.FirstName;
             ViewBag.TotalSteps = _chatService.TotalSteps;
+            ViewBag.PatientPhoto  = patient.User?.ProfilePhotoUrl;
             return View();
         }
 
@@ -324,7 +325,8 @@ namespace PharmaCare.MVC.Controllers
             {
                 Consultation = consultation,
                 AIAssessment = consultation.AIAssessment,
-                IsPatientView = User.IsInRole("Patient")
+                IsPatientView = User.IsInRole("Patient"),
+                MedicationOrder = await _consultationService.GetOrderByConsultationIdAsync(id)
             };
 
             return View(viewModel);
@@ -426,8 +428,6 @@ namespace PharmaCare.MVC.Controllers
                 if (consultation == null) return NotFound();
 
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (consultation.PharmacistId != userId && !User.IsInRole("Admin"))
-                    return Forbid();
 
                 var patient = await _patientService.GetPatientWithDetailsAsync(consultation.PatientId);
                 var inventory = await _inventoryService.GetAllInventoryAsync();

@@ -27,5 +27,11 @@ namespace PharmaCare.Services.Interfaces
         
         Task<IEnumerable<Consultation>> GetRecentConsultationsWithDetailsAsync(int count = 10);
         Task<bool> SubmitRecommendationAsync(int consultationId, string pharmacistId, Recommendation recommendation);
+        
+        
+        Task<bool> PlaceOrderAsync(int consultationId, string patientUserId, string deliveryAddress);
+        Task<bool> DispatchOrderAsync(int orderId, string pharmacistNotes);
+        Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId);
+        Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync();
     }
 }

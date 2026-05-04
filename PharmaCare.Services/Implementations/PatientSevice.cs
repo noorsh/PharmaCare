@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using PharmaCare.Data.Models;
 using PharmaCare.Data.Repositories.Interfaces;
 using PharmaCare.Services.Interfaces;
@@ -250,6 +252,50 @@ namespace PharmaCare.Services.Implementations
             {
                 _logger.LogError(ex, "Error retrieving all patients with details");
                 throw;
+            }
+        }
+        public async Task<string?> SaveProfilePhotoAsync(IFormFile file, string webRootPath)
+        {
+            try
+            {
+                var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
+                if (!allowedTypes.Contains(file.ContentType.ToLower()))
+                    return null;
+
+                if (file.Length > 5 * 1024 * 1024)
+                    return null;
+
+                var uploadsFolder = Path.Combine(webRootPath, "uploads", "profiles");
+                Directory.CreateDirectory(uploadsFolder);
+
+                var ext      = Path.GetExtension(file.FileName).ToLower();
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
+
+                return $"/uploads/profiles/{fileName}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving profile photo");
+                return null;
+            }
+        }
+
+        public void DeleteProfilePhoto(string? photoUrl, string webRootPath)
+        {
+            if (string.IsNullOrEmpty(photoUrl)) return;
+            try
+            {
+                var filePath = Path.Combine(webRootPath, photoUrl.TrimStart('/'));
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting profile photo");
             }
         }
     }

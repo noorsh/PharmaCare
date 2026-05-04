@@ -10,12 +10,56 @@
         <p class="text-gray-500 dark:text-gray-400 mt-2">Maintain accurate health and contact information for safer prescriptions and personalized care.</p>
     </div>
 
-    <form asp-action="Edit" method="post">
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         @Html.HiddenFor(m => m.PatientId)
         @Html.HiddenFor(m => m.UserId)
         
         <div class="grid grid-cols-1 gap-8">
+
+            <!-- Profile Photo Section -->
+            <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">account_circle</span>
+                        Profile Photo
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="flex items-center gap-6">
+                        <div id="photoPreview"
+                             class="size-24 rounded-full border-2 border-gray-200 dark:border-gray-700 overflow-hidden flex-shrink-0">
+                            @if (!string.IsNullOrEmpty(Model.User?.ProfilePhotoUrl))
+                            {
+                                <img src="@Model.User.ProfilePhotoUrl"
+                                     class="size-full object-cover" alt="Profile photo" />
+                            }
+                            else
+                            {
+                                <div class="size-full bg-primary text-white flex items-center justify-center font-bold text-3xl">
+                                    @(Model.User?.FirstName?.Substring(0, 1).ToUpper() ?? "U")
+                                </div>
+                            }
+                        </div>
+                        <div class="flex-1">
+                            <input type="file"
+                                   name="ProfilePhoto"
+                                   id="profilePhotoInput"
+                                   accept="image/jpeg,image/png,image/webp"
+                                   class="hidden"
+                                   onchange="previewPhoto(this)" />
+                            <button type="button"
+                                    onclick="document.getElementById('profilePhotoInput').click()"
+                                    class="flex items-center gap-2 px-4 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold hover:bg-primary/20 transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">upload</span>
+                                Change Photo
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2">JPG, PNG or WebP — max 5MB. Leave empty to keep current photo.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Section 1: Personal Information -->
             <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 <div class="p-6 border-b border-gray-100 dark:border-gray-800">
@@ -25,37 +69,27 @@
                     </h2>
                 </div>
                 <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Full Name (Read-only from User) -->
                     <div class="flex flex-col gap-2">
                         <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Full Name</label>
                         <input class="w-full rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-950 dark:border-gray-800 text-gray-400 cursor-not-allowed" 
-                               disabled 
-                               type="text" 
-                               value="@Model.User.FirstName @Model.User.LastName"/>
+                               disabled type="text" value="@Model.User.FirstName @Model.User.LastName"/>
                         <span class="text-xs text-gray-500">Contact support to update your name</span>
                     </div>
                     
-                    <!-- Email (Read-only) -->
                     <div class="flex flex-col gap-2">
                         <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Email Address (Read-only)</label>
                         <input class="w-full rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-950 dark:border-gray-800 text-gray-400 cursor-not-allowed" 
-                               disabled 
-                               type="email" 
-                               value="@Model.User.Email"/>
+                               disabled type="email" value="@Model.User.Email"/>
                         <span class="text-xs text-gray-500">Email cannot be changed. Contact support if needed.</span>
                     </div>
                     
-                    <!-- Phone Number (Read-only from User) -->
                     <div class="flex flex-col gap-2">
                         <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Phone Number</label>
                         <input class="w-full rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-950 dark:border-gray-800 text-gray-400 cursor-not-allowed" 
-                               disabled 
-                               type="tel" 
-                               value="@(Model.User.PhoneNumber ?? "Not provided")"/>
+                               disabled type="tel" value="@(Model.User.PhoneNumber ?? "Not provided")"/>
                         <span class="text-xs text-gray-500">Contact support to update phone number</span>
                     </div>
                     
-                    <!-- Date of Birth -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="DateOfBirth" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Date of Birth</label>
                         <input asp-for="DateOfBirth" 
@@ -64,7 +98,6 @@
                         <span asp-validation-for="DateOfBirth" class="text-xs text-red-500"></span>
                     </div>
                     
-                    <!-- Gender -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="Gender" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Gender</label>
                         <select asp-for="Gender" 
@@ -77,7 +110,6 @@
                         <span asp-validation-for="Gender" class="text-xs text-red-500"></span>
                     </div>
                     
-                    <!-- Blood Type -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="BloodType" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Blood Type</label>
                         <select asp-for="BloodType" 
@@ -88,43 +120,35 @@
                         <span asp-validation-for="BloodType" class="text-xs text-red-500"></span>
                     </div>
                     
-                    <!-- Address -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="Address" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Address</label>
                         <input asp-for="Address" 
                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
-                               type="text" 
-                               placeholder="Street address"/>
+                               type="text" placeholder="Street address"/>
                         <span asp-validation-for="Address" class="text-xs text-red-500"></span>
                     </div>
                     
-                    <!-- City -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="City" class="text-sm font-semibold text-gray-700 dark:text-gray-300">City</label>
                         <input asp-for="City" 
                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
-                               type="text" 
-                               placeholder="City name"/>
+                               type="text" placeholder="City name"/>
                         <span asp-validation-for="City" class="text-xs text-red-500"></span>
                     </div>
                     
-                    <!-- Height -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="Height" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Height (cm)</label>
                         <input asp-for="Height" 
                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
-                               type="number" 
-                               placeholder="e.g., 175.5"/>
+                               type="number" placeholder="e.g., 175.5"/>
                         <span asp-validation-for="Height" class="text-xs text-red-500"></span>
                     </div>
                     
-                    <!-- Weight -->
                     <div class="flex flex-col gap-2">
                         <label asp-for="Weight" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Weight (kg)</label>
                         <input asp-for="Weight" 
                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-primary focus:ring-primary" 
-                               type="number" 
-                               placeholder="e.g., 70.5"/>
+                               type="number" placeholder="e.g., 70.5"/>
                         <span asp-validation-for="Weight" class="text-xs text-red-500"></span>
                     </div>
                 </div>
@@ -147,7 +171,6 @@
                             </p>
                         </div>
                         <div class="space-y-6">
-                            <!-- Pregnancy -->
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white">Currently Pregnant</p>
@@ -159,7 +182,6 @@
                                 </label>
                             </div>
                             
-                            <!-- Breastfeeding -->
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white">Currently Breastfeeding</p>
@@ -171,7 +193,6 @@
                                 </label>
                             </div>
                             
-                            <!-- Kidney Disease -->
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white">Chronic Kidney Disease</p>
@@ -183,7 +204,6 @@
                                 </label>
                             </div>
                             
-                            <!-- Liver Disease -->
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white">Chronic Liver Disease</p>
@@ -195,7 +215,6 @@
                                 </label>
                             </div>
                             
-                            <!-- Drug Allergies -->
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white">Known Drug Allergies</p>
@@ -207,7 +226,6 @@
                                 </label>
                             </div>
                             
-                            <!-- Drug Allergy Details (Conditional) -->
                             <div id="drugAllergyDetailsDiv" style="display: @(Model.HasDrugAllergies ? "block" : "none")">
                                 <div class="flex flex-col gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                                     <label asp-for="DrugAllergyDetails" class="text-sm font-semibold text-red-900 dark:text-red-200">Specify Drug Allergies</label>
@@ -232,7 +250,6 @@
                         </h2>
                     </div>
                     <div class="p-6 space-y-6">
-                        <!-- Smoking Status -->
                         <div class="flex flex-col gap-2">
                             <label asp-for="SmokingStatus" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Smoking Status</label>
                             <select asp-for="SmokingStatus" 
@@ -243,7 +260,6 @@
                             <span asp-validation-for="SmokingStatus" class="text-xs text-red-500"></span>
                         </div>
                         
-                        <!-- Alcohol Consumption -->
                         <div class="flex flex-col gap-2">
                             <label asp-for="AlcoholConsumption" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Alcohol Consumption</label>
                             <select asp-for="AlcoholConsumption" 
@@ -254,7 +270,6 @@
                             <span asp-validation-for="AlcoholConsumption" class="text-xs text-red-500"></span>
                         </div>
                         
-                        <!-- Exercise Frequency -->
                         <div class="flex flex-col gap-2">
                             <label asp-for="ExerciseFrequency" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Exercise Frequency</label>
                             <select asp-for="ExerciseFrequency" 
@@ -319,6 +334,18 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        // Photo preview
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('photoPreview').innerHTML =
+                        `<img src="${e.target.result}" class="size-full object-cover rounded-full" />`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
         // Show/hide drug allergy details based on checkbox
         const hasDrugAllergiesCheckbox = document.getElementById('hasDrugAllergies');
         const drugAllergyDetailsDiv = document.getElementById('drugAllergyDetailsDiv');
@@ -328,16 +355,12 @@
                 drugAllergyDetailsDiv.style.display = 'block';
             } else {
                 drugAllergyDetailsDiv.style.display = 'none';
-                // Clear the textarea when unchecked
                 const textarea = drugAllergyDetailsDiv.querySelector('textarea');
                 if (textarea) textarea.value = '';
             }
         }
 
-        // Set initial state
         toggleDrugAllergyDetails();
-
-        // Add event listener
         hasDrugAllergiesCheckbox.addEventListener('change', toggleDrugAllergyDetails);
     </script>
 }

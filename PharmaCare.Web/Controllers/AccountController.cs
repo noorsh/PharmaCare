@@ -16,13 +16,15 @@ namespace PharmaCare.MVC.Controllers
         private readonly ILogger<AccountController> _logger;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _env;
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IPatientService patientService,
             ILogger<AccountController> logger,
             IEmailService emailService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IWebHostEnvironment env)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -30,6 +32,7 @@ namespace PharmaCare.MVC.Controllers
             _logger = logger;
             _emailService = emailService;
             _configuration = configuration;
+            _env = env;
         }
 
         // GET: Account/Register
@@ -39,109 +42,120 @@ namespace PharmaCare.MVC.Controllers
             return View();
         }
 
-      // POST: Account/Register
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(PatientRegistrationViewModel model)
+     // POST: Account/Register
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(PatientRegistrationViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        try
         {
-            if (!ModelState.IsValid)
+            // Save photo first before creating user
+            string? photoUrl = null;
+            if (model.ProfilePhoto != null && model.ProfilePhoto.Length > 0)
             {
-                return View(model);
+                photoUrl = await _patientService.SaveProfilePhotoAsync(model.ProfilePhoto, _env.WebRootPath);
+                if (photoUrl == null)
+                {
+                    ModelState.AddModelError("ProfilePhoto", "Invalid photo. Please use JPG or PNG under 5MB.");
+                    return View(model);
+                }
             }
 
-            try
+            // Create user account
+            var user = new ApplicationUser
             {
-                // Create user account
-                var user = new ApplicationUser
+                UserName        = model.Email,
+                Email           = model.Email,
+                FirstName       = model.FirstName,
+                LastName        = model.LastName,
+                PhoneNumber     = model.PhoneNumber,
+                ProfilePhotoUrl = photoUrl,
+                CreatedAt       = DateTime.UtcNow
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                // Assign Patient role
+                await _userManager.AddToRoleAsync(user, "Patient");
+
+                // Ensure DateOfBirth is UTC
+                var dateOfBirth = model.DateOfBirth.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(model.DateOfBirth, DateTimeKind.Utc)
+                    : model.DateOfBirth.ToUniversalTime();
+
+                // Create patient profile
+                var patient = new Patient
                 {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    PhoneNumber = model.PhoneNumber,
-                    CreatedAt = DateTime.UtcNow
+                    UserId             = user.Id,
+                    DateOfBirth        = dateOfBirth,
+                    Gender             = model.Gender,
+                    Address            = model.Address,
+                    City               = model.City,
+                    EmergencyContact   = model.EmergencyContact,
+                    Height             = model.Height,
+                    Weight             = model.Weight,
+                    BloodType          = model.BloodType,
+                    SmokingStatus      = model.SmokingStatus,
+                    AlcoholConsumption = model.AlcoholConsumption,
+                    ExerciseFrequency  = model.ExerciseFrequency,
+                    IsPregnant         = model.IsPregnant,
+                    IsBreastfeeding    = model.IsBreastfeeding,
+                    HasKidneyDisease   = model.HasKidneyDisease,
+                    HasLiverDisease    = model.HasLiverDisease,
+                    HasDrugAllergies   = model.HasDrugAllergies,
+                    DrugAllergyDetails = model.DrugAllergyDetails,
+                    AdditionalNotes    = model.AdditionalNotes,
+                    CreatedAt          = DateTime.UtcNow,
+                    UpdatedAt          = DateTime.UtcNow
                 };
 
-                var result = await _userManager.CreateAsync(user, model.Password);
+                await _patientService.CreatePatientAsync(patient);
 
-                if (result.Succeeded)
-                {
-                    // Assign Patient role
-                    await _userManager.AddToRoleAsync(user, "Patient");
+                // Send welcome email to patient
+                var patientFullName = $"{model.FirstName} {model.LastName}";
+                await _emailService.SendEmailAsync(
+                    model.Email,
+                    patientFullName,
+                    "Welcome to PharmaCare 💊",
+                    GetPatientWelcomeEmail(patientFullName)
+                );
 
-                    // Ensure DateOfBirth is UTC
-                    var dateOfBirth = model.DateOfBirth.Kind == DateTimeKind.Unspecified
-                        ? DateTime.SpecifyKind(model.DateOfBirth, DateTimeKind.Utc)
-                        : model.DateOfBirth.ToUniversalTime();
+                // Send notification to admin
+                var adminEmail = _configuration["EmailSettings:AdminEmail"];
+                await _emailService.SendEmailAsync(
+                    adminEmail!,
+                    "PharmaCare Admin",
+                    "New Patient Registration",
+                    GetAdminNotificationEmail(patientFullName, model.Email)
+                );
 
-                    // Create patient profile
-                    var patient = new Patient
-                    {
-                        UserId = user.Id,
-                        DateOfBirth = dateOfBirth,
-                        Gender = model.Gender,
-                        Address = model.Address,
-                        City = model.City,
-                        EmergencyContact = model.EmergencyContact,
-                        Height = model.Height,
-                        Weight = model.Weight,
-                        BloodType = model.BloodType,
-                        SmokingStatus = model.SmokingStatus,
-                        AlcoholConsumption = model.AlcoholConsumption,
-                        ExerciseFrequency = model.ExerciseFrequency,
-                        IsPregnant = model.IsPregnant,
-                        IsBreastfeeding = model.IsBreastfeeding,
-                        // NEW: Critical Safety Flags
-                        HasKidneyDisease = model.HasKidneyDisease,
-                        HasLiverDisease = model.HasLiverDisease,
-                        HasDrugAllergies = model.HasDrugAllergies,
-                        DrugAllergyDetails = model.DrugAllergyDetails,
-                        AdditionalNotes = model.AdditionalNotes,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
+                // Sign in the user
+                await _signInManager.SignInAsync(user, isPersistent: false);
 
-                    await _patientService.CreatePatientAsync(patient);
-        //Send email 
-
-                    var adminEmail = _configuration["EmailSettings:AdminEmail"];
-                    var patientFullName = $"{model.FirstName} {model.LastName}";
-                    // Send welcome email to patient
-                    await _emailService.SendEmailAsync(
-                        model.Email,
-                        patientFullName,
-                        "Welcome to PharmaCare 💊",
-                        GetPatientWelcomeEmail(patientFullName)
-                    );
-
-                    // Send notification to admin
-                    await _emailService.SendEmailAsync(
-                        adminEmail!,
-                        "PharmaCare Admin",
-                        "New Patient Registration",
-                        GetAdminNotificationEmail(patientFullName, model.Email)
-                    );
-                    // Sign in the user
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-
-                    TempData["Success"] = "Registration successful! Welcome to PharmaCare.";
-                    return RedirectToAction("Index", "Home");
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during patient registration");
-                ModelState.AddModelError(string.Empty, "An error occurred during registration. Please try again.");
+                TempData["Success"] = "Registration successful! Welcome to PharmaCare.";
+                return RedirectToAction("Index", "Home");
             }
 
-            return View(model);
+            // If user creation failed, delete the uploaded photo
+            _patientService.DeleteProfilePhoto(photoUrl, _env.WebRootPath);
+
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
         }
-        // GET: Account/Login
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during patient registration");
+            ModelState.AddModelError(string.Empty, "An error occurred during registration. Please try again.");
+        }
+
+        return View(model);
+    }
+// GET: Account/Login
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
