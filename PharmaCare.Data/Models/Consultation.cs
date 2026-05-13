@@ -39,6 +39,8 @@ namespace PharmaCare.Data.Models
         public AIAssessment? AIAssessment { get; set; }
         public Recommendation? Recommendation { get; set; }
         public MedicationOrder? MedicationOrder { get; set; }
+        public ICollection<ConsultationAttachment> Attachments { get; set; } = new List<ConsultationAttachment>();
+        public ICollection<ConsultationMessage> Messages { get; set; } = new List<ConsultationMessage>();
 
         public string? PharmacistId { get; set; } // ASP.NET Identity UserId (string)
 

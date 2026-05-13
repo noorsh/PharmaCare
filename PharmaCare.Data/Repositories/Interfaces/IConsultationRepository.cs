@@ -18,5 +18,15 @@ namespace PharmaCare.Data.Repositories.Interfaces
         Task UpdateMedicationOrderAsync(MedicationOrder order);
         Task<MedicationOrder?> GetOrderByIdAsync(int orderId);
         Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync();
+        Task AddAttachmentAsync(ConsultationAttachment attachment);
+        Task<IEnumerable<ConsultationAttachment>> GetAttachmentsByConsultationIdAsync(int consultationId);
+        Task<ConsultationAttachment?> GetAttachmentByIdAsync(int attachmentId);
+        Task DeleteAttachmentAsync(int attachmentId);
+        Task AddAttachmentRequestAsync(ConsultationAttachment request);
+        Task UpdateAttachmentAsync(ConsultationAttachment attachment);
+        Task AddMessageAsync(ConsultationMessage message);
+        Task<IEnumerable<ConsultationMessage>> GetMessagesByConsultationIdAsync(int consultationId);
+        Task MarkMessagesAsReadAsync(int consultationId, string readerUserId);
+     
     }
 }

@@ -121,5 +121,79 @@ namespace PharmaCare.Data.Repositories.Implementations
                 .OrderByDescending(o => o.OrderedAt)
                 .ToListAsync();
         }
+        public async Task AddAttachmentAsync(ConsultationAttachment attachment)
+        {
+            await _context.ConsultationAttachments.AddAsync(attachment);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<ConsultationAttachment>> GetAttachmentsByConsultationIdAsync(int consultationId)
+        {
+            return await _context.ConsultationAttachments
+                .Include(a => a.UploadedBy)
+                .Include(a => a.RequestedBy)
+                .Where(a => a.ConsultationId == consultationId)
+                .OrderByDescending(a => a.UploadedAt)
+                .ToListAsync();
+        }
+
+        public async Task<ConsultationAttachment?> GetAttachmentByIdAsync(int attachmentId)
+        {
+            return await _context.ConsultationAttachments
+                .Include(a => a.UploadedBy)
+                .Include(a => a.Consultation)
+                .FirstOrDefaultAsync(a => a.AttachmentId == attachmentId);
+        }
+
+        public async Task DeleteAttachmentAsync(int attachmentId)
+        {
+            var attachment = await _context.ConsultationAttachments
+                .FindAsync(attachmentId);
+            if (attachment != null)
+            {
+                _context.ConsultationAttachments.Remove(attachment);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task AddAttachmentRequestAsync(ConsultationAttachment request)
+        {
+            await _context.ConsultationAttachments.AddAsync(request);
+            await _context.SaveChangesAsync();
+        }
+        public async Task UpdateAttachmentAsync(ConsultationAttachment attachment)
+        {
+            _context.ConsultationAttachments.Update(attachment);
+            await _context.SaveChangesAsync();
+        }
+        public async Task AddMessageAsync(ConsultationMessage message)
+        {
+            await _context.ConsultationMessages.AddAsync(message);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<ConsultationMessage>> GetMessagesByConsultationIdAsync(int consultationId)
+        {
+            return await _context.ConsultationMessages
+                .Include(m => m.Sender)
+                .Where(m => m.ConsultationId == consultationId)
+                .OrderBy(m => m.SentAt)
+                .ToListAsync();
+        }
+
+        public async Task MarkMessagesAsReadAsync(int consultationId, string readerUserId)
+        {
+            var unread = await _context.ConsultationMessages
+                .Where(m => m.ConsultationId == consultationId
+                            && m.SenderUserId != readerUserId
+                            && !m.IsRead)
+                .ToListAsync();
+
+            foreach (var msg in unread)
+                msg.IsRead = true;
+
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

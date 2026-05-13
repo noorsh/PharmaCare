@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PharmaCare.Data;
@@ -11,9 +12,11 @@ using PharmaCare.Data;
 namespace PharmaCare.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509103958_AddConsultationAttachments")]
+    partial class AddConsultationAttachments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -433,46 +436,6 @@ namespace PharmaCare.Data.Migrations
                     b.HasIndex("UploadedByUserId");
 
                     b.ToTable("ConsultationAttachments");
-                });
-
-            modelBuilder.Entity("PharmaCare.Data.Models.ConsultationMessage", b =>
-                {
-                    b.Property<int>("MessageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MessageId"));
-
-                    b.Property<int>("ConsultationId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("SenderRole")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("SenderUserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("SentAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("MessageId");
-
-                    b.HasIndex("ConsultationId");
-
-                    b.HasIndex("SenderUserId");
-
-                    b.ToTable("ConsultationMessages");
                 });
 
             modelBuilder.Entity("PharmaCare.Data.Models.CurrentMedication", b =>
@@ -920,25 +883,6 @@ namespace PharmaCare.Data.Migrations
                     b.Navigation("UploadedBy");
                 });
 
-            modelBuilder.Entity("PharmaCare.Data.Models.ConsultationMessage", b =>
-                {
-                    b.HasOne("PharmaCare.Data.Models.Consultation", "Consultation")
-                        .WithMany("Messages")
-                        .HasForeignKey("ConsultationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PharmaCare.Data.Models.ApplicationUser", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Consultation");
-
-                    b.Navigation("Sender");
-                });
-
             modelBuilder.Entity("PharmaCare.Data.Models.CurrentMedication", b =>
                 {
                     b.HasOne("PharmaCare.Data.Models.Patient", "Patient")
@@ -1036,8 +980,6 @@ namespace PharmaCare.Data.Migrations
                     b.Navigation("Attachments");
 
                     b.Navigation("MedicationOrder");
-
-                    b.Navigation("Messages");
 
                     b.Navigation("Recommendation");
                 });
