@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ using PharmaCare.MVC.Models.ViewModels;
 using PharmaCare.Services;
 using PharmaCare.Services.Implementations;
 using PharmaCare.Services.Interfaces;
+using ConsultationSummary = PharmaCare.MVC.Models.ViewModels.ConsultationSummary;
 
 namespace PharmaCare.MVC.Controllers
 {
@@ -22,7 +24,8 @@ namespace PharmaCare.MVC.Controllers
         private readonly ConsultationChatService _chatService;
         private readonly IInventoryService _inventoryService;
         private readonly IEmailService _emailService;
-
+        private readonly IGroqChatService _groqChatService;
+        private readonly IWebHostEnvironment _env;
         public ConsultationController(
             IConsultationService consultationService,
             IAIAssessmentService aiAssessmentService,
@@ -31,7 +34,8 @@ namespace PharmaCare.MVC.Controllers
             ILogger<ConsultationController> logger,
             ConsultationChatService chatService,
             IEmailService emailService,
-            IInventoryService inventoryService)
+            IInventoryService inventoryService, IGroqChatService iGroqChatService,
+            IWebHostEnvironment env)
         {
             _consultationService = consultationService;
             _aiAssessmentService = aiAssessmentService;
@@ -41,6 +45,8 @@ namespace PharmaCare.MVC.Controllers
             _chatService = chatService;
             _inventoryService = inventoryService;
             _emailService = emailService;
+            _groqChatService = iGroqChatService;
+            _env = env;
         }
 
         // ─── PATIENT ACTIONS ────────────────────────────────────────────
@@ -153,63 +159,79 @@ namespace PharmaCare.MVC.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Patient")]
-        public async Task<IActionResult> SubmitChat([FromForm] SubmitChatRequest request)
+        public async Task<IActionResult> SubmitChat([FromForm] SubmitChatRequest request, IFormFile? file, string? fileType)
         {
-            try
+    try
+    {
+        var userId  = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var patient = await _patientService.GetPatientByUserIdAsync(userId);
+        if (patient == null) return RedirectToAction("Dashboard", "Patient");
+
+        string mainComplaint, duration, severity, additionalInfo;
+
+        if (request.IsGroqSummary)
+        {
+            mainComplaint  = request.Symptoms       ?? "";
+            duration       = request.Duration       ?? "";
+            severity       = request.Severity       ?? "Moderate";
+            additionalInfo = request.Transcript     ?? "";
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(request?.AnswersJson))
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var patient = await _patientService.GetPatientByUserIdAsync(userId);
-                if (patient == null) return RedirectToAction("Dashboard", "Patient");
-
-                if (string.IsNullOrWhiteSpace(request?.AnswersJson))
-                {
-                    _logger.LogWarning("SubmitChat called with empty AnswersJson");
-                    TempData["Error"] = "No answers were submitted. Please try again.";
-                    return RedirectToAction(nameof(Start));
-                }
-
-                var jsonOptions = new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-
-                var answers = System.Text.Json.JsonSerializer.Deserialize<List<StepAnswer>>(request.AnswersJson, jsonOptions) ?? new List<StepAnswer>();
-
-                var mainComplaint = answers?.FirstOrDefault(a => a.StepNumber == 1)?.Answer ?? "";
-                var duration = answers?.FirstOrDefault(a => a.StepNumber == 2)?.Answer;
-                var severity = answers?.FirstOrDefault(a => a.StepNumber == 3)?.Answer ?? "Moderate";
-                var transcript = _chatService.BuildSummary(answers ?? new());
-
-                var consultation = new Consultation
-                {
-                    PatientId = patient.PatientId,
-                    Symptoms = mainComplaint,
-                    SymptomDuration = duration,
-                    SymptomSeverity = severity,
-                    AdditionalInformation = transcript,
-                    Status = "Pending"
-                };
-
-                var created = await _consultationService.CreateConsultationAsync(consultation);
-
-                var assessment = await _aiAssessmentService.GenerateAssessmentAsync(created);
-                await _aiAssessmentService.SaveAssessmentAsync(assessment); // fixed: added await
-
-                TempData["AssessmentReport"] = assessment.AssessmentReport;
-                TempData["PossibleConditions"] = assessment.PossibleConditions;
-                TempData["RedFlags"] = assessment.RedFlags;
-                TempData["ConfidenceScore"] = assessment.ConfidenceScore?.ToString("F0");
-
-                return RedirectToAction(nameof(Confirmation), new { id = created.ConsultationId });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error submitting consultation");
-                TempData["Error"] = "An error occurred while submitting. Please try again.";
+                TempData["Error"] = "No answers were submitted. Please try again.";
                 return RedirectToAction(nameof(Start));
             }
+            var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var answers     = JsonSerializer.Deserialize<List<StepAnswer>>(request.AnswersJson!, jsonOptions) ?? new();
+            mainComplaint  = answers.FirstOrDefault(a => a.StepNumber == 1)?.Answer ?? "";
+            duration       = answers.FirstOrDefault(a => a.StepNumber == 2)?.Answer ?? "";
+            severity       = answers.FirstOrDefault(a => a.StepNumber == 3)?.Answer ?? "Moderate";
+            additionalInfo = _chatService.BuildSummary(answers);
         }
 
+        var consultation = new Consultation
+        {
+            PatientId             = patient.PatientId,
+            Symptoms              = mainComplaint,
+            SymptomDuration       = duration,
+            SymptomSeverity       = severity,
+            AdditionalInformation = additionalInfo,
+            Status                = "Pending"
+        };
+
+        var created    = await _consultationService.CreateConsultationAsync(consultation);
+
+        // Save attachment if provided
+        if (file != null && file.Length > 0)
+        {
+            var appDataPath = Path.Combine(_env.ContentRootPath, "App_Data");
+            await _consultationService.SaveAttachmentAsync(
+                created.ConsultationId,
+                userId,
+                file,
+                fileType ?? "Other",
+                appDataPath);
+        }
+
+        var assessment = await _aiAssessmentService.GenerateAssessmentAsync(created);
+        await _aiAssessmentService.SaveAssessmentAsync(assessment);
+
+        TempData["AssessmentReport"]   = assessment.AssessmentReport;
+        TempData["PossibleConditions"] = assessment.PossibleConditions;
+        TempData["RedFlags"]           = assessment.RedFlags;
+        TempData["ConfidenceScore"]    = assessment.ConfidenceScore?.ToString("F0");
+
+        return RedirectToAction(nameof(Confirmation), new { id = created.ConsultationId });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error submitting consultation");
+        TempData["Error"] = "An error occurred while submitting. Please try again.";
+        return RedirectToAction(nameof(Start));
+    }
+}
         // GET: Consultation/Confirmation/5
         [Authorize(Roles = "Patient")]
         public async Task<IActionResult> Confirmation(int id)
@@ -313,25 +335,33 @@ namespace PharmaCare.MVC.Controllers
             var consultation = await _consultationService.GetConsultationWithDetailsAsync(id);
             if (consultation == null) return NotFound();
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (User.IsInRole("Patient"))
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var patient = await _patientService.GetPatientByUserIdAsync(userId);
                 if (patient == null || consultation.PatientId != patient.PatientId)
                     return Forbid();
             }
 
+            var attachments = await _consultationService.GetAttachmentsAsync(id);
+            var order       = await _consultationService.GetOrderByConsultationIdAsync(id);
+            var messages    = await _consultationService.GetMessagesAsync(id);
+
+            await _consultationService.MarkMessagesAsReadAsync(id, userId);
+
             var viewModel = new ConsultationViewModel
             {
-                Consultation = consultation,
-                AIAssessment = consultation.AIAssessment,
-                IsPatientView = User.IsInRole("Patient"),
-                MedicationOrder = await _consultationService.GetOrderByConsultationIdAsync(id)
+                Consultation    = consultation,
+                AIAssessment    = consultation.AIAssessment,
+                IsPatientView   = User.IsInRole("Patient"),
+                MedicationOrder = order,
+                Attachments     = attachments,
+                Messages        = messages
             };
 
             return View(viewModel);
         }
-
         // POST: Consultation/Cancel/5
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -368,16 +398,37 @@ namespace PharmaCare.MVC.Controllers
             try
             {
                 var allPending = await _consultationService.GetPendingConsultationsWithDetailsAsync();
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId     = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var recentCompleted = await _consultationService.GetRecentConsultationsWithDetailsAsync(5);
+
+            // Load messages and attachments for each consultation to determine last activity
+            //future enhancement, add column last modified
+                var pendingWithActivity = new List<(Consultation consultation, DateTime lastActivity)>();
+
+                foreach (var c in allPending)
+                {
+                    var messages    = await _consultationService.GetMessagesAsync(c.ConsultationId);
+                    var attachments = await _consultationService.GetAttachmentsAsync(c.ConsultationId);
+
+                    var lastMessageTime    = messages.Any()    ? messages.Max(m => m.SentAt)       : DateTime.MinValue;
+                    var lastAttachmentTime = attachments.Any() ? attachments.Max(a => a.UploadedAt) : DateTime.MinValue;
+
+                    var lastActivity = new[] { c.CreatedAt, lastMessageTime, lastAttachmentTime }.Max();
+                    pendingWithActivity.Add((c, lastActivity));
+                }
+
+                var sortedPending = pendingWithActivity
+                    .OrderByDescending(x => x.lastActivity)
+                    .Select(x => x.consultation)
+                    .ToList();
 
                 var viewModel = new PharmacistQueueViewModel
                 {
-                    PendingConsultations     = allPending.Where(c => c.Status == "Pending"),
-                    UnderReviewConsultations = allPending.Where(c => c.Status == "UnderReview"),
+                    PendingConsultations     = sortedPending.Where(c => c.Status == "Pending"),
+                    UnderReviewConsultations = sortedPending.Where(c => c.Status == "UnderReview"),
                     RecentlyCompleted        = recentCompleted.Where(c => c.Status == "Completed"),
-                    TotalPending             = allPending.Count(c => c.Status == "Pending"),
-                    TotalUnderReview         = allPending.Count(c => c.Status == "UnderReview")
+                    TotalPending             = sortedPending.Count(c => c.Status == "Pending"),
+                    TotalUnderReview         = sortedPending.Count(c => c.Status == "UnderReview")
                 };
 
                 return View(viewModel);
@@ -428,9 +479,15 @@ namespace PharmaCare.MVC.Controllers
                 if (consultation == null) return NotFound();
 
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (consultation.PharmacistId != userId && !User.IsInRole("Admin"))
+                    return Forbid();
 
-                var patient = await _patientService.GetPatientWithDetailsAsync(consultation.PatientId);
-                var inventory = await _inventoryService.GetAllInventoryAsync();
+                var patient     = await _patientService.GetPatientWithDetailsAsync(consultation.PatientId);
+                var inventory   = await _inventoryService.GetAllInventoryAsync();
+                var attachments = await _consultationService.GetAttachmentsAsync(id);
+                var messages    = await _consultationService.GetMessagesAsync(id);
+
+                await _consultationService.MarkMessagesAsReadAsync(id, userId);
 
                 var viewModel = new ReviewConsultationViewModel
                 {
@@ -440,7 +497,9 @@ namespace PharmaCare.MVC.Controllers
                     CurrentMedications   = patient?.CurrentMedications ?? new List<CurrentMedication>(),
                     Allergies            = patient?.Allergies ?? new List<Allergy>(),
                     MedicalHistory       = patient?.MedicalHistories ?? new List<MedicalHistory>(),
-                    AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired)
+                    AvailableMedications = inventory.Where(i => i.IsActive && !i.IsExpired),
+                    Attachments          = attachments,
+                    Messages             = messages
                 };
 
                 return View(viewModel);
@@ -452,7 +511,6 @@ namespace PharmaCare.MVC.Controllers
                 return RedirectToAction(nameof(Queue));
             }
         }
-
         // POST: Consultation/SubmitRecommendation/5
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -593,9 +651,54 @@ namespace PharmaCare.MVC.Controllers
             public string? Answer { get; set; }
         }
 
+        // POST: Consultation/ChatMessage
+        [HttpPost]
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> ChatMessage([FromBody] ChatMessageRequest request)
+        {
+            try
+            {
+                var result = await _groqChatService.SendMessageAsync(
+                    request.History ?? new List<GroqMessage>(),
+                    request.Message ?? ""
+                );
+
+                return Ok(new
+                {
+                    reply       = result.Reply,
+                    isComplete  = result.IsComplete,
+                    isEmergency = result.IsEmergency,
+                    summary     = result.Summary
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ChatMessage");
+                return Ok(new
+                {
+                    reply       = "Something went wrong. Please try again.",
+                    isComplete  = false,
+                    isEmergency = false
+                });
+            }
+        }
+
+        public class ChatMessageRequest
+        {
+            public string? Message { get; set; }
+            public List<GroqMessage>? History { get; set; }
+        }
         public class SubmitChatRequest
         {
             public string? AnswersJson { get; set; }
+
+            // Groq summary fields (used when AI chat is active)
+            public string? Symptoms       { get; set; }
+            public string? Duration       { get; set; }
+            public string? Severity       { get; set; }
+            public string? AdditionalInfo { get; set; }
+            public string? Transcript     { get; set; }
+            public bool    IsGroqSummary  { get; set; } = false;
         }
             // GET: Consultation/History
     [Authorize(Roles = "Pharmacist,Admin")]

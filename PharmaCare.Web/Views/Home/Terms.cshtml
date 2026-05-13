@@ -1,0 +1,235 @@
+﻿@{
+    ViewData["Title"] = "Terms of Service";
+    Layout = "_LandingLayout";
+}
+
+<header class="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 lg:px-10 flex h-16 items-center justify-between">
+        <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings:'FILL' 1;">health_metrics</span>
+            <span class="text-xl font-black tracking-tight text-[#111518]" style="font-family:'Manrope',sans-serif;">PharmaCare</span>
+        </a>
+        <a asp-controller="Home" asp-action="Index"
+           class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            Back to Home
+        </a>
+    </div>
+</header>
+
+<main class="bg-background-light min-h-screen py-16">
+    <div class="max-w-3xl mx-auto px-6 lg:px-0">
+
+        @* Page header *@
+        <div class="mb-12">
+            <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">gavel</span>
+                Legal
+            </div>
+            <h1 class="text-4xl font-black text-[#111518] mb-4" style="font-family:'Manrope',sans-serif;">Terms of Service</h1>
+            <p class="text-gray-500 text-sm">Last updated: January 1, 2025 &nbsp;&middot;&nbsp; Effective date: January 1, 2025</p>
+
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3">
+                <span class="material-symbols-outlined text-yellow-600 text-xl mt-0.5 shrink-0">info</span>
+                <p class="text-sm text-yellow-800 leading-relaxed">
+                    PharmaCare is an academic project developed for educational purposes. These terms of service govern your use of the platform in that context.
+                </p>
+            </div>
+
+            @* Medical disclaimer — most critical notice *@
+            <div class="mt-4 p-5 bg-red-50 border-2 border-red-200 rounded-xl flex items-start gap-3">
+                <span class="material-symbols-outlined text-red-600 text-2xl mt-0.5 shrink-0" style="font-variation-settings:'FILL' 1;">emergency</span>
+                <div>
+                    <p class="font-black text-red-700 text-sm uppercase tracking-wider mb-1">Medical Disclaimer — Please Read</p>
+                    <p class="text-sm text-red-800 leading-relaxed">
+                        PharmaCare is <strong>not a substitute for professional medical care</strong>. The AI assessments and pharmacist recommendations provided through this platform are for informational guidance only. In case of a medical emergency, call emergency services (140 in Lebanon) immediately. Always consult a licensed physician for diagnosis and treatment of medical conditions.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        @* Content *@
+        <div class="space-y-10 text-gray-700 leading-relaxed">
+
+            @* 1 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">1</span>
+                    Acceptance of Terms
+                </h2>
+                <p>
+                    By creating an account or using PharmaCare in any way, you confirm that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree with any part of these terms, you must not use the platform.
+                </p>
+            </section>
+
+            @* 2 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">2</span>
+                    Nature of the Service
+                </h2>
+                <p class="mb-3">PharmaCare provides a remote pharmacy consultation service that works as follows:</p>
+                <ul class="space-y-2 ml-4">
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> Patients describe their symptoms through the platform.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> An AI model performs a preliminary assessment of the described symptoms.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> A licensed pharmacist reviews the AI assessment and provides a final recommendation.</li>
+                </ul>
+                <p class="mt-4 text-sm text-gray-500 italic">
+                    The AI assessment is a decision-support tool only. It is not a medical diagnosis. The pharmacist's recommendation is advisory and does not replace a physician's prescription or clinical evaluation.
+                </p>
+            </section>
+
+            @* 3 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">3</span>
+                    Eligibility & Account Registration
+                </h2>
+                <ul class="space-y-2">
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> You must be at least 18 years old to create an account. If you are under 18, a parent or legal guardian must register on your behalf.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> You must provide accurate, truthful information during registration and keep it up to date.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> You are responsible for maintaining the security of your account credentials. Do not share your password with anyone.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> You are responsible for all activity that occurs under your account.</li>
+                </ul>
+            </section>
+
+            @* 4 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">4</span>
+                    Acceptable Use
+                </h2>
+                <p class="mb-3">You agree to use PharmaCare only for its intended purpose and in compliance with applicable laws. You must not:</p>
+                <ul class="space-y-2 ml-4">
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-red-400 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">cancel</span> Submit false or misleading symptoms or health information.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-red-400 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">cancel</span> Use the platform to obtain prescriptions or controlled substances fraudulently.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-red-400 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">cancel</span> Attempt to impersonate a pharmacist, administrator, or another user.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-red-400 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">cancel</span> Attempt to access, tamper with, or disrupt the platform's systems or databases.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-red-400 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">cancel</span> Use the platform in any way that could harm, endanger, or mislead other users.</li>
+                </ul>
+            </section>
+
+            @* 5 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">5</span>
+                    Medical Limitations & No Liability
+                </h2>
+                <div class="p-5 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                    <p class="text-sm">
+                        <strong>PharmaCare does not provide medical diagnoses.</strong> The recommendations provided through this platform are based on the symptoms you describe and are intended as general pharmacy guidance only.
+                    </p>
+                    <p class="text-sm">
+                        <strong>Consult a physician</strong> for any condition requiring clinical examination, lab work, imaging, or a formal diagnosis.
+                    </p>
+                    <p class="text-sm">
+                        <strong>In case of emergency</strong>, do not use this platform. Call 140 (Lebanese Red Cross), 175 (Civil Defense), or go to the nearest emergency room immediately.
+                    </p>
+                    <p class="text-sm">
+                        To the fullest extent permitted by applicable law, PharmaCare and its operators shall not be liable for any harm, injury, or loss resulting from reliance on information provided through this platform.
+                    </p>
+                </div>
+            </section>
+
+            @* 6 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">6</span>
+                    Pharmacist Role & Independence
+                </h2>
+                <p>
+                    Pharmacists on PharmaCare are independent licensed professionals. They exercise their own professional judgment in reviewing AI assessments and issuing recommendations. PharmaCare does not direct or control the clinical decisions of pharmacists on the platform.
+                </p>
+                <p class="mt-3">
+                    A pharmacist may decline to provide a recommendation, refer you to a physician, or escalate your case at their discretion.
+                </p>
+            </section>
+
+            @* 7 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">7</span>
+                    Intellectual Property
+                </h2>
+                <p>
+                    All software, content, design, and code comprising the PharmaCare platform is the property of the PharmaCare development team. You may not copy, reproduce, distribute, or create derivative works from any part of the platform without explicit written permission.
+                </p>
+                <p class="mt-3">
+                    Content you submit (symptom descriptions, messages) remains yours. By submitting it, you grant us a limited license to process it solely for the purpose of delivering the consultation service.
+                </p>
+            </section>
+
+            @* 8 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">8</span>
+                    Account Termination
+                </h2>
+                <p>
+                    We reserve the right to suspend or permanently terminate any account that violates these Terms of Service, submits fraudulent information, or engages in behavior that harms other users or the platform's integrity.
+                </p>
+                <p class="mt-3">
+                    You may delete your account at any time. Upon deletion, your personal data will be removed from our systems in accordance with our <a asp-controller="Home" asp-action="Privacy" class="text-primary underline">Privacy Policy</a>.
+                </p>
+            </section>
+
+            @* 9 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">9</span>
+                    Governing Law
+                </h2>
+                <p>
+                    These Terms of Service are governed by the laws of the Republic of Lebanon. Any disputes arising from your use of PharmaCare shall be subject to the exclusive jurisdiction of the courts of Lebanon.
+                </p>
+            </section>
+
+            @* 10 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">10</span>
+                    Changes to These Terms
+                </h2>
+                <p>
+                    We may update these Terms of Service at any time. We will notify registered users of material changes via email or an in-app notice. Continued use of the platform after any update constitutes your acceptance of the revised terms.
+                </p>
+            </section>
+
+            @* Contact *@
+            <section class="p-6 bg-primary/5 border border-primary/20 rounded-2xl">
+                <h2 class="text-lg font-black text-[#111518] mb-3" style="font-family:'Manrope',sans-serif;">Questions about these Terms?</h2>
+                <p class="text-sm text-gray-600 mb-2">If you have any questions or concerns about these Terms of Service, please contact us:</p>
+                <a href="mailto:legal@pharmacare.lb" class="inline-flex items-center gap-2 text-primary font-semibold text-sm hover:underline">
+                    <span class="material-symbols-outlined text-base">mail</span>
+                    legal@pharmacare.lb
+                </a>
+            </section>
+
+        </div>
+
+        @* Footer nav *@
+        <div class="mt-16 pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-base">arrow_back</span> Back to Home
+            </a>
+            <a asp-controller="Home" asp-action="Privacy" class="text-sm text-primary font-semibold hover:underline">
+                View Privacy Policy →
+            </a>
+        </div>
+
+    </div>
+</main>
+
+<footer class="bg-white border-t border-gray-100 py-8">
+    <div class="max-w-7xl mx-auto px-6 lg:px-10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">health_metrics</span>
+            <span class="font-black text-gray-900" style="font-family:'Manrope',sans-serif;">PharmaCare</span>
+            <span class="text-gray-400 text-sm ml-3">&#169; 2025 PharmaCare Lebanon. All rights reserved.</span>
+        </div>
+        <div class="flex gap-8">
+            <a asp-controller="Home" asp-action="Privacy" class="text-sm text-gray-500 hover:text-primary transition-colors">Privacy Policy</a>
+            <a asp-controller="Home" asp-action="Terms" class="text-sm text-primary font-semibold">Terms of Service</a>
+        </div>
+    </div>
+</footer>

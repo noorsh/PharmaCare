@@ -164,7 +164,9 @@
                     var completedAgo = c.CompletedAt.HasValue
                         ? (DateTime.UtcNow - c.CompletedAt.Value).TotalMinutes < 60
                             ? $"{(int)(DateTime.UtcNow - c.CompletedAt.Value).TotalMinutes} mins ago"
-                            : $"{(int)(DateTime.UtcNow - c.CompletedAt.Value).TotalHours} hours ago"
+                            : (DateTime.UtcNow - c.CompletedAt.Value).TotalHours < 24
+                                ? $"{(int)(DateTime.UtcNow - c.CompletedAt.Value).TotalHours} hours ago"
+                                : $"{(int)(DateTime.UtcNow - c.CompletedAt.Value).TotalDays} days ago"
                         : "—";
 
                     <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1923] transition-colors">

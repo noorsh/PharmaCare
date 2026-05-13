@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using PharmaCare.Data.Models;
 using PharmaCare.Data.Repositories.Interfaces;
 using PharmaCare.Services.Interfaces;
@@ -437,21 +438,164 @@ namespace PharmaCare.Services.Implementations
             }
         }
 
-    public async Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId)
-    {
-        return await _consultationRepository.GetOrderByConsultationIdAsync(consultationId);
-    } 
-    public async Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync()
+        public async Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId)
+        {
+            return await _consultationRepository.GetOrderByConsultationIdAsync(consultationId);
+        } 
+        public async Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync()
+        {
+            try
+            {
+                return await _consultationRepository.GetPendingOrdersAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving pending medication orders");
+                throw;
+            }
+        }
+            public async Task<ConsultationAttachment?> SaveAttachmentAsync(
+        int consultationId,
+        string uploadedByUserId,
+        IFormFile file,
+        string fileType,
+        string appDataPath)
     {
         try
         {
-            return await _consultationRepository.GetPendingOrdersAsync();
+            // Validate file type
+            var allowedMimes = new[]
+            {
+                "image/jpeg", "image/jpg", "image/png", "image/webp",
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            };
+
+            if (!allowedMimes.Contains(file.ContentType.ToLower()))
+                return null;
+
+            // Validate size — max 10MB
+            if (file.Length > 10 * 1024 * 1024)
+                return null;
+
+            // Save to App_Data/attachments/{consultationId}/
+            var folder = Path.Combine(appDataPath, "attachments", consultationId.ToString());
+            Directory.CreateDirectory(folder);
+
+            var ext      = Path.GetExtension(file.FileName).ToLower();
+            var fileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(folder, fileName);
+
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            var attachment = new ConsultationAttachment
+            {
+                ConsultationId    = consultationId,
+                UploadedByUserId  = uploadedByUserId,
+                FileName          = file.FileName,
+                FilePath          = filePath,
+                FileType          = fileType,
+                MimeType          = file.ContentType,
+                FileSizeBytes     = file.Length,
+                UploadedAt        = DateTime.UtcNow
+            };
+
+            await _consultationRepository.AddAttachmentAsync(attachment);
+            return attachment;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving pending medication orders");
-            throw;
+            _logger.LogError(ex, $"Error saving attachment for consultation {consultationId}");
+            return null;
         }
+    }
+
+    public async Task<IEnumerable<ConsultationAttachment>> GetAttachmentsAsync(int consultationId)
+    {
+        return await _consultationRepository.GetAttachmentsByConsultationIdAsync(consultationId);
+    }
+
+    public async Task<ConsultationAttachment?> GetAttachmentByIdAsync(int attachmentId)
+    {
+        return await _consultationRepository.GetAttachmentByIdAsync(attachmentId);
+    }
+
+    public async Task<bool> DeleteAttachmentAsync(int attachmentId, string requestingUserId, string appDataPath)
+    {
+        try
+        {
+            var attachment = await _consultationRepository.GetAttachmentByIdAsync(attachmentId);
+            if (attachment == null) return false;
+
+            // Only the uploader can delete
+            if (attachment.UploadedByUserId != requestingUserId) return false;
+
+            // Delete physical file
+            if (File.Exists(attachment.FilePath))
+                File.Delete(attachment.FilePath);
+
+            await _consultationRepository.DeleteAttachmentAsync(attachmentId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting attachment {attachmentId}");
+            return false;
+        }
+    }
+
+    public async Task RequestAttachmentAsync(int consultationId, string pharmacistUserId, string requestNote)
+    {
+        var request = new ConsultationAttachment
+        {
+            ConsultationId      = consultationId,
+            UploadedByUserId    = pharmacistUserId, // placeholder — no file yet
+            RequestedByUserId   = pharmacistUserId,
+            RequestNote         = requestNote,
+            FileName            = "pending",
+            FilePath            = "pending",
+            FileType            = "Requested",
+            MimeType            = "pending",
+            FileSizeBytes       = 0,
+            IsRequestFulfilled  = false,
+            UploadedAt          = DateTime.UtcNow
+        };
+
+        await _consultationRepository.AddAttachmentRequestAsync(request);
+    }
+
+    public async Task<bool> FulfillAttachmentRequestAsync(int attachmentId)
+    {
+        var attachment = await _consultationRepository.GetAttachmentByIdAsync(attachmentId);
+        if (attachment == null) return false;
+
+        attachment.IsRequestFulfilled = true;
+        await _consultationRepository.UpdateAttachmentAsync(attachment);
+        return true;
+    }
+    public async Task SendMessageAsync(int consultationId, string senderUserId, string senderRole, string message)
+    {
+        var msg = new ConsultationMessage
+        {
+            ConsultationId = consultationId,
+            SenderUserId   = senderUserId,
+            SenderRole     = senderRole,
+            Message        = message,
+            SentAt         = DateTime.UtcNow
+        };
+        await _consultationRepository.AddMessageAsync(msg);
+    }
+
+    public async Task<IEnumerable<ConsultationMessage>> GetMessagesAsync(int consultationId)
+    {
+        return await _consultationRepository.GetMessagesByConsultationIdAsync(consultationId);
+    }
+
+    public async Task MarkMessagesAsReadAsync(int consultationId, string readerUserId)
+    {
+        await _consultationRepository.MarkMessagesAsReadAsync(consultationId, readerUserId);
     }
     }
 }

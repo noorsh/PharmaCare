@@ -9,8 +9,11 @@ namespace PharmaCare.MVC.Models.ViewModels
         public AIAssessment? AIAssessment { get; set; }
         public bool IsPatientView { get; set; } = true;
         public MedicationOrder? MedicationOrder { get; set; }
+        public IEnumerable<ConsultationAttachment> Attachments { get; set; } 
+            = new List<ConsultationAttachment>();
+        public IEnumerable<ConsultationMessage> Messages { get; set; } 
+            = new List<ConsultationMessage>();
     }
-
     public class PharmacistQueueViewModel
     {
         public IEnumerable<Consultation> PendingConsultations { get; set; } = new List<Consultation>();
@@ -33,6 +36,10 @@ namespace PharmaCare.MVC.Models.ViewModels
             public IEnumerable<Allergy> Allergies { get; set; } = new List<Allergy>();
             public IEnumerable<CurrentMedication> CurrentMedications { get; set; } = new List<CurrentMedication>();
             public IEnumerable<MedicalHistory> MedicalHistory { get; set; } = new List<MedicalHistory>();
+            public IEnumerable<ConsultationAttachment> Attachments { get; set; } 
+                = new List<ConsultationAttachment>();
+            public IEnumerable<ConsultationMessage> Messages { get; set; } 
+                = new List<ConsultationMessage>();
 
             // Available medications for the dropdown — from Inventory
             public IEnumerable<Inventory> AvailableMedications { get; set; } = new List<Inventory>();

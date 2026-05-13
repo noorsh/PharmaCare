@@ -1,12 +1,18 @@
-﻿@model PharmaCare.MVC.Models.ViewModels.ReviewConsultationViewModel
+﻿ @model PharmaCare.MVC.Models.ViewModels.ReviewConsultationViewModel
 @{
     ViewData["Title"] = "Review Consultation";
     Layout = "_LayoutAuth";
     var c = Model.Consultation;
+    var attachments     = Model.Attachments ?? new List<PharmaCare.Data.Models.ConsultationAttachment>();
+    var realAttachments = attachments.Where(a => a.FileType != "Requested" && a.FileSizeBytes > 0).ToList();
+    var pendingRequest  = attachments.FirstOrDefault(a => a.FileType == "Requested" && !a.IsRequestFulfilled);
+    var messages        = Model.Messages ?? new List<PharmaCare.Data.Models.ConsultationMessage>();
+    var hasMessages     = messages.Any();
 }
 <head>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 </head>
+
 <div class="mb-6 flex items-center gap-3">
     <a asp-action="Queue" class="text-[#617789] hover:text-primary">
         <span class="material-symbols-outlined">arrow_back</span>
@@ -15,14 +21,30 @@
         <h2 class="text-2xl font-black">Review Consultation #@c.ConsultationId</h2>
         <p class="text-[#617789] text-sm">@(c.Patient?.User?.FirstName) • Submitted @c.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
     </div>
-    <span class="ml-auto bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full">
-        Under Review
-    </span>
+    <div class="ml-auto flex items-center gap-2">
+        @if (realAttachments.Any())
+        {
+            <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200">
+                <span class="material-symbols-outlined text-sm">attach_file</span>
+                @realAttachments.Count Attachment@(realAttachments.Count > 1 ? "s" : "")
+            </span>
+        }
+        @if (hasMessages)
+        {
+            <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200">
+                <span class="material-symbols-outlined text-sm">forum</span>
+                @messages.Count() Message@(messages.Count() > 1 ? "s" : "")
+            </span>
+        }
+        <span class="bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full">
+            Under Review
+        </span>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- Left: Patient Info + Symptoms -->
+    <!-- Left: Symptoms + AI + Messages + Attachments + Form -->
     <div class="lg:col-span-2 space-y-6">
 
         <!-- Symptoms -->
@@ -39,9 +61,7 @@
                 </div>
                 <div>
                     <p class="text-xs text-[#617789] font-medium">Severity</p>
-                    @{
-                        var sc = c.SymptomSeverity == "Severe" ? "text-red-500" : c.SymptomSeverity == "Moderate" ? "text-yellow-500" : "text-green-500";
-                    }
+                    @{ var sc = c.SymptomSeverity == "Severe" ? "text-red-500" : c.SymptomSeverity == "Moderate" ? "text-yellow-500" : "text-green-500"; }
                     <p class="text-sm font-semibold @sc">@(c.SymptomSeverity ?? "Not specified")</p>
                 </div>
             </div>
@@ -65,11 +85,9 @@
                         @Model.AIAssessment.ConfidenceScore?.ToString("F0")% confidence
                     </span>
                 </h3>
-
                 <div class="bg-blue-50 dark:bg-blue-500/10 rounded-lg p-4 mb-4">
                     <p class="text-sm">@Model.AIAssessment.AssessmentReport</p>
                 </div>
-
                 @if (!string.IsNullOrEmpty(Model.AIAssessment.PossibleConditions))
                 {
                     <div class="mb-3">
@@ -77,15 +95,13 @@
                         <p class="text-sm font-medium">@Model.AIAssessment.PossibleConditions</p>
                     </div>
                 }
-
                 @if (!string.IsNullOrEmpty(Model.AIAssessment.SuggestedQuestions))
                 {
                     <div class="mb-3">
-                        <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Suggested Questions to Ask Patient</p>
+                        <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Suggested Questions</p>
                         <p class="text-sm">@Model.AIAssessment.SuggestedQuestions</p>
                     </div>
                 }
-
                 @if (!string.IsNullOrEmpty(Model.AIAssessment.RedFlags))
                 {
                     <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3">
@@ -96,22 +112,196 @@
             </div>
         }
 
-       <!-- Pharmacist Recommendation Form -->
+        <!-- Messages -->
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#e5e7eb] dark:border-[#2d3a4b] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">forum</span>
+                    <span class="font-bold text-sm">Patient Messages</span>
+                </div>
+                @if (hasMessages)
+                {
+                    <span class="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        @messages.Count() message@(messages.Count() > 1 ? "s" : "")
+                    </span>
+                }
+            </div>
+            <div class="p-6 space-y-4">
+                @if (hasMessages)
+                {
+                    <div id="messageThread" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                        @foreach (var msg in messages)
+                        {
+                            var isPharmacist = msg.SenderRole == "Pharmacist";
+                            var bubbleCss    = isPharmacist
+                                ? "bg-primary text-white rounded-2xl rounded-tr-none"
+                                : "bg-slate-100 dark:bg-[#2d3a4b] text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-none";
+                            var wrapperCss   = isPharmacist ? "flex justify-end gap-2 items-end" : "flex justify-start gap-2 items-end";
+                            var senderLabel  = isPharmacist ? "You" : $"{msg.Sender?.FirstName} (Patient)";
+                            var avatarBg     = isPharmacist ? "bg-primary text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300";
+
+                            <div class="@wrapperCss">
+                                @if (!isPharmacist)
+                                {
+                                    <div class="w-7 h-7 rounded-full @avatarBg flex items-center justify-center shrink-0">
+                                        <span class="material-symbols-outlined text-sm">person</span>
+                                    </div>
+                                }
+                                <div class="max-w-[75%]">
+                                    <p class="text-[10px] text-[#617789] mb-1 @(isPharmacist ? "text-right" : "")">
+                                        @senderLabel · @msg.SentAt.ToString("MMM dd, HH:mm")
+                                    </p>
+                                    <div class="@bubbleCss px-4 py-2.5 text-sm leading-relaxed">@msg.Message</div>
+                                </div>
+                                @if (isPharmacist)
+                                {
+                                    <div class="w-7 h-7 rounded-full @avatarBg flex items-center justify-center shrink-0">
+                                        <span class="material-symbols-outlined text-sm">local_pharmacy</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div id="messageThread" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                        <p class="text-sm text-[#617789] text-center py-2">No messages yet. Send a question to the patient below.</p>
+                    </div>
+                }
+
+                <!-- Pharmacist reply input -->
+               
+                <div class="flex gap-3 mt-2">
+                    <input type="text" id="messageInput"
+                           placeholder="Ask the patient a question..."
+                           class="flex-1 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] bg-slate-50 dark:bg-[#0f1923] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                           onkeydown="if(event.key==='Enter') sendMessage()" />
+                    <button onclick="sendMessage()"
+                            class="bg-primary hover:bg-primary/90 text-white font-bold px-4 py-2.5 rounded-xl transition-all shrink-0">
+                        <span class="material-symbols-outlined text-lg">send</span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-[#617789] mt-1.5">The patient will be notified and can reply from their consultation page.</p>
+            </div>
+        </div>
+
+        <!-- Patient Attachments -->
+        <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#e5e7eb] dark:border-[#2d3a4b] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">attach_file</span>
+                    <span class="font-bold text-sm">Patient Documents</span>
+                </div>
+                @if (realAttachments.Any())
+                {
+                    <span class="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        @realAttachments.Count file@(realAttachments.Count > 1 ? "s" : "")
+                    </span>
+                }
+            </div>
+            <div class="p-6 space-y-4">
+
+                @if (pendingRequest != null)
+                {
+                    <div class="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <span class="material-symbols-outlined text-amber-600 text-lg shrink-0">pending</span>
+                        <div>
+                            <p class="text-xs font-bold text-amber-700 dark:text-amber-400">Waiting for patient</p>
+                            <p class="text-sm text-amber-600 dark:text-amber-300 mt-0.5">@pendingRequest.RequestNote</p>
+                        </div>
+                    </div>
+                }
+
+                @if (realAttachments.Any())
+                {
+                    <div class="space-y-2">
+                        @foreach (var att in realAttachments)
+                        {
+                            var fileIcon      = att.MimeType == "application/pdf" ? "picture_as_pdf" : att.MimeType.StartsWith("image/") ? "image" : "description";
+                            var fileIconColor = att.MimeType == "application/pdf" ? "text-red-500" : att.MimeType.StartsWith("image/") ? "text-blue-500" : "text-slate-500";
+                            var typeBadge     = att.FileType switch
+                            {
+                                "Prescription" => "bg-emerald-100 text-emerald-700",
+                                "Lab Result"   => "bg-blue-100 text-blue-700",
+                                "Photo"        => "bg-purple-100 text-purple-700",
+                                _              => "bg-slate-100 text-slate-600"
+                            };
+                            <div class="flex items-center gap-3 p-3 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-slate-50 dark:bg-[#0f1923]">
+                                <span class="material-symbols-outlined @fileIconColor text-2xl shrink-0">@fileIcon</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold truncate">@att.FileName</p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-xs font-bold px-1.5 py-0.5 rounded @typeBadge">@att.FileType</span>
+                                        <span class="text-xs text-[#617789]">@((att.FileSizeBytes / 1024.0).ToString("F0")) KB</span>
+                                        <span class="text-xs text-[#617789]">@att.UploadedAt.ToString("MMM dd, HH:mm")</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <a asp-controller="Attachment" asp-action="View" asp-route-id="@att.AttachmentId"
+                                       target="_blank"
+                                       class="flex items-center gap-1 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                        <span class="material-symbols-outlined text-base">open_in_new</span>
+                                        View
+                                    </a>
+                                    <a asp-controller="Attachment" asp-action="Download" asp-route-id="@att.AttachmentId"
+                                       class="flex items-center gap-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                        <span class="material-symbols-outlined text-base">download</span>
+                                        Download
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (pendingRequest == null)
+                {
+                    <p class="text-sm text-[#617789]">No documents uploaded by patient yet.</p>
+                }
+
+                @if (pendingRequest == null)
+                {
+                    <div id="requestBtnContainer">
+                        <button type="button" onclick="showRequestForm()"
+                                class="flex items-center gap-2 text-amber-600 border border-amber-300 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 font-semibold px-4 py-2 rounded-lg text-sm transition-all">
+                            <span class="material-symbols-outlined text-lg">request_page</span>
+                            Request Document from Patient
+                        </button>
+                    </div>
+                    <div id="requestForm" class="hidden">
+                        <form asp-controller="Attachment" asp-action="Request" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="consultationId" value="@c.ConsultationId" />
+                            <div class="space-y-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800">
+                                <label class="block text-sm font-semibold text-amber-800 dark:text-amber-300">What do you need from the patient?</label>
+                                <input type="text" name="requestNote" required
+                                       placeholder="e.g. Please upload a photo of the affected area"
+                                       class="w-full rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-[#1a2632] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                                <div class="flex gap-3">
+                                    <button type="submit" class="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-all">
+                                        <span class="material-symbols-outlined text-base">send</span>Send Request
+                                    </button>
+                                    <button type="button" onclick="hideRequestForm()" class="px-4 py-2 rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] text-[#617789] font-semibold text-sm hover:bg-slate-50 dark:hover:bg-[#1a2632] transition-all">Cancel</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Recommendation Form -->
         <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-6">
             <h3 class="font-bold mb-4 flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary">rate_review</span>
                 Pharmacist Recommendation
             </h3>
-
             <form asp-action="SubmitRecommendation" asp-route-id="@c.ConsultationId" method="post">
                 @Html.AntiForgeryToken()
 
-                <!-- Refer to Doctor Toggle -->
                 <div class="mb-5 p-4 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg">
                     <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" asp-for="ReferToDoctor" id="referToggle"
-                               class="w-4 h-4 accent-yellow-500"
-                               onchange="toggleReferral(this)" />
+                        <input type="checkbox" asp-for="ReferToDoctor" id="referToggle" class="w-4 h-4 accent-yellow-500" onchange="toggleReferral(this)" />
                         <span class="font-semibold text-yellow-700 dark:text-yellow-400">Refer patient to a doctor</span>
                     </label>
                     <div id="referralReasonBox" class="mt-3 hidden">
@@ -122,11 +312,8 @@
                     </div>
                 </div>
 
-                <!-- Medication -->
                 <div class="mb-4">
-                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">
-                        Recommended Medication <span class="text-[#617789] font-normal normal-case">(optional)</span>
-                    </label>
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Recommended Medication <span class="text-[#617789] font-normal normal-case">(optional)</span></label>
                     <select asp-for="InventoryId" id="medicationSelect"
                             class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="">— No specific medication —</option>
@@ -137,53 +324,33 @@
                     </select>
                 </div>
 
-                <!-- Dosage -->
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Dosage</label>
-                    <input asp-for="Dosage" type="text"
-                           class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                           placeholder="e.g. 500mg twice daily" />
+                    <input asp-for="Dosage" type="text" class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. 500mg twice daily" />
                 </div>
 
-                <!-- Instructions -->
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Instructions</label>
-                    <textarea asp-for="Instructions" rows="2"
-                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="e.g. Take after meals, avoid alcohol..."></textarea>
+                    <textarea asp-for="Instructions" rows="2" class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Take after meals, avoid alcohol..."></textarea>
                 </div>
 
-                <!-- Warnings -->
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Warnings / Precautions</label>
-                    <textarea asp-for="Warnings" rows="2"
-                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="e.g. Do not exceed 4g per day..."></textarea>
+                    <textarea asp-for="Warnings" rows="2" class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Do not exceed 4g per day..."></textarea>
                 </div>
 
-                <!-- Clinical Notes (required) -->
                 <div class="mb-5">
-                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">
-                        Clinical Notes <span class="text-red-500">*</span>
-                    </label>
-                    <textarea asp-for="PharmacistNotes" rows="4"
-                              class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="Your assessment, reasoning, and any advice for the patient..."></textarea>
+                    <label class="block text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Clinical Notes <span class="text-red-500">*</span></label>
+                    <textarea asp-for="PharmacistNotes" rows="4" class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your assessment, reasoning, and any advice for the patient..."></textarea>
                     <span asp-validation-for="PharmacistNotes" class="text-xs text-red-500 mt-1 block"></span>
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="submit"
-                            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined">check_circle</span>
-                        Submit & Complete
+                    <button type="submit" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">check_circle</span>Submit & Complete
                     </button>
-                    <a asp-action="Queue"
-                       class="bg-transparent border border-[#e5e7eb] dark:border-[#2d3a4b] text-[#617789] font-bold py-3 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
-                        Back
-                    </a>
+                    <a asp-action="Queue" class="bg-transparent border border-[#e5e7eb] dark:border-[#2d3a4b] text-[#617789] font-bold py-3 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-all">Back</a>
                 </div>
-
             </form>
         </div>
     </div>
@@ -191,86 +358,56 @@
     <!-- Right Sidebar -->
     <div class="space-y-4">
 
-        <!-- Patient Info (keep your existing block) -->
         <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
             <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-base">person</span>
-                Patient Info
+                <span class="material-symbols-outlined text-primary text-base">person</span>Patient Info
             </h3>
             @if (c.Patient != null)
             {
                 <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-[#617789]">Name</span>
-                        <span class="font-medium">@c.Patient.User?.FirstName @c.Patient.User?.LastName</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-[#617789]">Blood Type</span>
-                        <span class="font-medium">@(c.Patient.BloodType.ToString() ?? "Unknown")</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-[#617789]">Pregnant</span>
-                        <span class="font-medium @(c.Patient.IsPregnant ? "text-yellow-500" : "")">@(c.Patient.IsPregnant ? "Yes ⚠" : "No")</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-[#617789]">Breastfeeding</span>
-                        <span class="font-medium @(c.Patient.IsBreastfeeding ? "text-yellow-500" : "")">@(c.Patient.IsBreastfeeding ? "Yes ⚠" : "No")</span>
-                    </div>
+                    <div class="flex justify-between"><span class="text-[#617789]">Name</span><span class="font-medium">@c.Patient.User?.FirstName @c.Patient.User?.LastName</span></div>
+                    <div class="flex justify-between"><span class="text-[#617789]">Blood Type</span><span class="font-medium">@(c.Patient.BloodType.ToString() ?? "Unknown")</span></div>
+                    <div class="flex justify-between"><span class="text-[#617789]">Pregnant</span><span class="font-medium @(c.Patient.IsPregnant ? "text-yellow-500" : "")">@(c.Patient.IsPregnant ? "Yes ⚠" : "No")</span></div>
+                    <div class="flex justify-between"><span class="text-[#617789]">Breastfeeding</span><span class="font-medium @(c.Patient.IsBreastfeeding ? "text-yellow-500" : "")">@(c.Patient.IsBreastfeeding ? "Yes ⚠" : "No")</span></div>
                 </div>
                 <div class="mt-4 pt-4 border-t border-[#e5e7eb] dark:border-[#2d3a4b]">
-                    <a asp-controller="Patient" asp-action="Details" asp-route-id="@c.PatientId"
-                       class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                        View Full Profile
-                        <span class="material-symbols-outlined text-sm">open_in_new</span>
+                    <a asp-controller="Patient" asp-action="Details" asp-route-id="@c.PatientId" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                        View Full Profile<span class="material-symbols-outlined text-sm">open_in_new</span>
                     </a>
                 </div>
             }
         </div>
 
-        <!-- Allergies -->
         <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
             <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
-                <span class="material-symbols-outlined text-red-500 text-base">warning</span>
-                Allergies
+                <span class="material-symbols-outlined text-red-500 text-base">warning</span>Allergies
             </h3>
             @if (Model.Allergies.Any())
             {
                 <div class="flex flex-wrap gap-2">
                     @foreach (var a in Model.Allergies)
                     {
-                        <span class="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-semibold px-2 py-1 rounded-full">
-                            @a.AllergenName
-                        </span>
+                        <span class="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-semibold px-2 py-1 rounded-full">@a.AllergenName</span>
                     }
                 </div>
             }
-            else
-            {
-                <p class="text-xs text-[#617789]">No known allergies</p>
-            }
+            else { <p class="text-xs text-[#617789]">No known allergies</p> }
         </div>
 
-        <!-- Current Medications -->
         <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-5">
             <h3 class="font-bold mb-3 text-sm flex items-center gap-2">
-                <span class="material-symbols-outlined text-blue-500 text-base">medication</span>
-                Current Medications
+                <span class="material-symbols-outlined text-blue-500 text-base">medication</span>Current Medications
             </h3>
             @if (Model.CurrentMedications.Any())
             {
                 <div class="space-y-2">
                     @foreach (var m in Model.CurrentMedications)
                     {
-                        <div class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium px-3 py-2 rounded-lg">
-                            @m.MedicationName
-                        </div>
+                        <div class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium px-3 py-2 rounded-lg">@m.MedicationName</div>
                     }
                 </div>
             }
-            else
-            {
-                <p class="text-xs text-[#617789]">No current medications on record</p>
-            }
+            else { <p class="text-xs text-[#617789]">No current medications on record</p> }
         </div>
 
     </div>
@@ -278,24 +415,151 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
     <partial name="_ValidationScriptsPartial" />
     <script>
         $(document).ready(function () {
-            $('#medicationSelect').select2({
-                placeholder: '— No specific medication —',
-                allowClear: true,
-                width: '100%'
-            });
+            $('#medicationSelect').select2({ placeholder: '— No specific medication —', allowClear: true, width: '100%' });
         });
+
         function toggleReferral(checkbox) {
-            const box = document.getElementById('referralReasonBox');
-            box.classList.toggle('hidden', !checkbox.checked);
+            document.getElementById('referralReasonBox').classList.toggle('hidden', !checkbox.checked);
         }
-        // On page load, show referral box if checkbox already checked (validation fail repopulation)
+
+        function showRequestForm() {
+            document.getElementById('requestBtnContainer').classList.add('hidden');
+            document.getElementById('requestForm').classList.remove('hidden');
+        }
+
+        function hideRequestForm() {
+            document.getElementById('requestForm').classList.add('hidden');
+            document.getElementById('requestBtnContainer').classList.remove('hidden');
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const cb = document.getElementById('referToggle');
             if (cb && cb.checked) toggleReferral(cb);
+
+            const thread = document.getElementById('messageThread');
+            if (thread) thread.scrollTop = thread.scrollHeight;
         });
+        const consultationId = @c.ConsultationId;
+        const csrfToken      = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        async function sendMessage() {
+            const input   = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value    = '';
+            input.disabled = true;
+
+            // Show immediately
+            appendMessage(message, 'Pharmacist');
+
+            try {
+                await fetch('/Message/Send', {
+                    method:  'POST',
+                    headers: {
+                        'Content-Type':             'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': csrfToken
+                    },
+                    body: new URLSearchParams({ consultationId, message })
+                });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+}
+
+        function appendMessage(text, role) {
+            const thread = document.getElementById('messageThread');
+            if (!thread) return;
+
+            const isPharmacist = role === 'Pharmacist';
+            const wrapperDiv   = document.createElement('div');
+            wrapperDiv.className = isPharmacist ? 'flex justify-end gap-2 items-end' : 'flex justify-start gap-2 items-end';
+            wrapperDiv.setAttribute('data-msg', 'new');
+
+            const avatarHtml = isPharmacist
+                ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-sm">local_pharmacy</span></div>`
+                : `<div class="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-sm">person</span></div>`;
+
+            const bubbleCss = isPharmacist
+                ? 'bg-primary text-white rounded-2xl rounded-tr-none'
+                : 'bg-slate-100 dark:bg-[#2d3a4b] text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-none';
+
+            const now  = new Date();
+            const time = now.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+
+            wrapperDiv.innerHTML = isPharmacist ? `
+        <div class="max-w-[75%]">
+            <p class="text-[10px] text-[#617789] mb-1 text-right">You · ${time}</p>
+            <div class="${bubbleCss} px-4 py-2.5 text-sm leading-relaxed">${escapeHtml(text)}</div>
+        </div>
+        ${avatarHtml}
+    ` : `
+        ${avatarHtml}
+        <div class="max-w-[75%]">
+            <p class="text-[10px] text-[#617789] mb-1">Patient · ${time}</p>
+            <div class="${bubbleCss} px-4 py-2.5 text-sm leading-relaxed">${escapeHtml(text)}</div>
+        </div>
+    `;
+
+            thread.appendChild(wrapperDiv);
+            thread.scrollTop = thread.scrollHeight;
+        }
+
+        async function pollMessages() {
+            try {
+                const response = await fetch(`/Message/GetMessages?consultationId=${consultationId}`);
+                const messages = await response.json();
+
+                const thread = document.getElementById('messageThread');
+                if (!thread) return;
+
+                const currentCount = thread.querySelectorAll('[data-msg]').length;
+                if (messages.length !== currentCount) {
+                    thread.innerHTML = messages.map(m => {
+                        const isPharmacist = m.senderRole === 'Pharmacist';
+                        const bubbleCss    = isPharmacist
+                            ? 'bg-primary text-white rounded-2xl rounded-tr-none'
+                            : 'bg-slate-100 dark:bg-[#2d3a4b] text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-none';
+                        const wrapperCss   = isPharmacist ? 'flex justify-end gap-2 items-end' : 'flex justify-start gap-2 items-end';
+                        const avatarHtml   = isPharmacist
+                            ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-sm">local_pharmacy</span></div>`
+                            : `<div class="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-sm">person</span></div>`;
+
+                        return `<div class="${wrapperCss}" data-msg="${m.messageId}">
+                    ${isPharmacist ? `
+                        <div class="max-w-[75%]">
+                            <p class="text-[10px] text-[#617789] mb-1 text-right">You · ${m.sentAt}</p>
+                            <div class="${bubbleCss} px-4 py-2.5 text-sm leading-relaxed">${escapeHtml(m.message)}</div>
+                        </div>
+                        ${avatarHtml}
+                    ` : `
+                        ${avatarHtml}
+                        <div class="max-w-[75%]">
+                            <p class="text-[10px] text-[#617789] mb-1">${m.senderName} · ${m.sentAt}</p>
+                            <div class="${bubbleCss} px-4 py-2.5 text-sm leading-relaxed">${escapeHtml(m.message)}</div>
+                        </div>
+                    `}
+                </div>`;
+                    }).join('');
+                    thread.scrollTop = thread.scrollHeight;
+                }
+            } catch (err) {
+                console.error('Poll error:', err);
+            }
+}
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        document.querySelectorAll('#messageThread > div').forEach((el, i) => el.setAttribute('data-msg', i));
+        setInterval(pollMessages, 10000);
     </script>
 }

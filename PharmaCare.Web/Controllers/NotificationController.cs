@@ -31,6 +31,7 @@ namespace PharmaCare.MVC.Controllers
         [Authorize(Roles = "Pharmacist,Admin")]
         public async Task<IActionResult> GetNotifications()
         {
+            var userId        = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var notifications = new List<object>();
 
             // ── Pending consultations ────────────────────────────────
@@ -56,7 +57,7 @@ namespace PharmaCare.MVC.Controllers
             }
 
             // ── Pending medication orders ────────────────────────────
-            var pendingOrders = await _consultationService.GetPendingOrdersAsync();
+            var pendingOrders     = await _consultationService.GetPendingOrdersAsync();
             var pendingOrdersList = pendingOrders.ToList();
 
             foreach (var o in pendingOrdersList.Take(3))
@@ -77,8 +78,75 @@ namespace PharmaCare.MVC.Controllers
                 });
             }
 
+            // ── Patient messages sent TO this pharmacist ─────────────
+            var assignedConsultations = await _consultationService
+                .GetConsultationsByPharmacistAsync(userId);
+
+            var unreadMessages = new List<object>();
+            foreach (var c in assignedConsultations.Where(c => c.Status == "UnderReview"))
+            {
+                var msgs = await _consultationService.GetMessagesAsync(c.ConsultationId);
+                var patientUnread = msgs
+                    .Where(m => m.SenderRole == "Patient" && !m.IsRead)
+                    .ToList();
+
+                if (patientUnread.Any())
+                {
+                    var patientName = c.Patient?.User != null
+                        ? $"{c.Patient.User.FirstName} {c.Patient.User.LastName}"
+                        : "A patient";
+
+                    unreadMessages.Add(new
+                    {
+                        type    = "message",
+                        icon    = "forum",
+                        color   = "blue",
+                        title   = "Patient Message",
+                        message = $"{patientName} replied to your question",
+                        time    = GetTimeAgo(patientUnread.Last().SentAt),
+                        link    = Url.Action("Review", "Consultation", new { id = c.ConsultationId })
+                    });
+                }
+            }
+
+            foreach (var m in unreadMessages.Take(3))
+                notifications.Add(m);
+
+            // ── Patient uploaded documents ───────────────────────────
+            var recentAttachments = new List<object>();
+            foreach (var c in assignedConsultations.Where(c => c.Status == "UnderReview"))
+            {
+                var atts = await _consultationService.GetAttachmentsAsync(c.ConsultationId);
+                var recentPatientUploads = atts
+                    .Where(a => a.FileType != "Requested"
+                             && a.FileSizeBytes > 0
+                             && a.UploadedAt >= DateTime.UtcNow.AddHours(-24))
+                    .ToList();
+
+                if (recentPatientUploads.Any())
+                {
+                    var patientName = c.Patient?.User != null
+                        ? $"{c.Patient.User.FirstName} {c.Patient.User.LastName}"
+                        : "A patient";
+
+                    recentAttachments.Add(new
+                    {
+                        type    = "attachment",
+                        icon    = "attach_file",
+                        color   = "amber",
+                        title   = "Document Uploaded",
+                        message = $"{patientName} uploaded {recentPatientUploads.Count} document{(recentPatientUploads.Count > 1 ? "s" : "")}",
+                        time    = GetTimeAgo(recentPatientUploads.Last().UploadedAt),
+                        link    = Url.Action("Review", "Consultation", new { id = c.ConsultationId })
+                    });
+                }
+            }
+
+            foreach (var a in recentAttachments.Take(3))
+                notifications.Add(a);
+
             // ── Low stock alerts ─────────────────────────────────────
-            var lowStock = await _inventoryService.GetLowStockItemsAsync();
+            var lowStock     = await _inventoryService.GetLowStockItemsAsync();
             var lowStockList = lowStock.ToList();
 
             foreach (var item in lowStockList.Take(3))
@@ -95,7 +163,11 @@ namespace PharmaCare.MVC.Controllers
                 });
             }
 
-            var totalCount = pendingList.Count + pendingOrdersList.Count + lowStockList.Count;
+            var totalCount = pendingList.Count
+                           + pendingOrdersList.Count
+                           + unreadMessages.Count
+                           + recentAttachments.Count
+                           + lowStockList.Count;
 
             return Json(new
             {
@@ -123,10 +195,9 @@ namespace PharmaCare.MVC.Controllers
 
             var notifications = new List<object>();
 
-            foreach (var c in consultations
-                .Where(c => c.Status == "Completed" || c.Status == "UnderReview")
-                .OrderByDescending(c => c.CompletedAt ?? c.ReviewedAt ?? c.CreatedAt))
+            foreach (var c in consultations.OrderByDescending(c => c.CompletedAt ?? c.ReviewedAt ?? c.CreatedAt))
             {
+                // ── Consultation completed ───────────────────────────
                 if (c.Status == "Completed" && c.CompletedAt.HasValue)
                 {
                     var pharmacistName = c.Pharmacist != null
@@ -144,7 +215,7 @@ namespace PharmaCare.MVC.Controllers
                         link    = Url.Action("Details", "Consultation", new { id = c.ConsultationId })
                     });
 
-                    // ── Dispatched order notification for patient ────
+                    // ── Medication dispatched ────────────────────────
                     if (c.MedicationOrder?.Status == "Dispatched" && c.MedicationOrder.DispatchedAt.HasValue)
                     {
                         notifications.Add(new
@@ -159,6 +230,8 @@ namespace PharmaCare.MVC.Controllers
                         });
                     }
                 }
+
+                // ── Under review ─────────────────────────────────────
                 else if (c.Status == "UnderReview" && c.ReviewedAt.HasValue)
                 {
                     notifications.Add(new
@@ -171,6 +244,49 @@ namespace PharmaCare.MVC.Controllers
                         time    = GetTimeAgo(c.ReviewedAt.Value),
                         link    = Url.Action("Details", "Consultation", new { id = c.ConsultationId })
                     });
+
+                    // ── Unread pharmacist messages ───────────────────
+                    var msgs = await _consultationService.GetMessagesAsync(c.ConsultationId);
+                    var unreadFromPharmacist = msgs
+                        .Where(m => m.SenderRole == "Pharmacist" && !m.IsRead)
+                        .ToList();
+
+                    if (unreadFromPharmacist.Any())
+                    {
+                        var pharmacistName = c.Pharmacist != null
+                            ? $"{c.Pharmacist.FirstName} {c.Pharmacist.LastName}"
+                            : "Your pharmacist";
+
+                        notifications.Add(new
+                        {
+                            type    = "message",
+                            icon    = "forum",
+                            color   = "blue",
+                            title   = "Pharmacist Message",
+                            message = $"{pharmacistName} sent you a question about your consultation",
+                            time    = GetTimeAgo(unreadFromPharmacist.Last().SentAt),
+                            link    = Url.Action("Details", "Consultation", new { id = c.ConsultationId })
+                        });
+                    }
+
+                    // ── Document request from pharmacist ─────────────
+                    var atts = await _consultationService.GetAttachmentsAsync(c.ConsultationId);
+                    var pendingRequest = atts
+                        .FirstOrDefault(a => a.FileType == "Requested" && !a.IsRequestFulfilled);
+
+                    if (pendingRequest != null)
+                    {
+                        notifications.Add(new
+                        {
+                            type    = "docrequest",
+                            icon    = "request_page",
+                            color   = "amber",
+                            title   = "Document Requested",
+                            message = pendingRequest.RequestNote ?? "Your pharmacist requested a document",
+                            time    = GetTimeAgo(pendingRequest.UploadedAt),
+                            link    = Url.Action("Details", "Consultation", new { id = c.ConsultationId })
+                        });
+                    }
                 }
             }
 

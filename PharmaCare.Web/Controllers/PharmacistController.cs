@@ -126,6 +126,7 @@ public async Task<IActionResult> Patients(string? search, string? tab)
             LastConsultation  = p.Consultations.OrderByDescending(c => c.CreatedAt).FirstOrDefault()
         }).ToList();
 
+        
         var viewModel = new PatientListViewModel
         {
             Patients     = rows,

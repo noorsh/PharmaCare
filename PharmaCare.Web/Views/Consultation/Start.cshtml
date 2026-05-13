@@ -1,6 +1,6 @@
 ﻿@{
-    ViewData["Title"] = "New Consultation";
-    Layout = "_LayoutAuth";
+ViewData["Title"] = "New Consultation";
+Layout = "_LayoutAuth";
 }
 
 <div class="max-w-2xl mx-auto flex flex-col" style="height: calc(100vh - 150px)">
@@ -9,21 +9,28 @@
     <div class="mb-4 flex items-center justify-between shrink-0">
         <div>
             <h2 class="text-2xl font-black tracking-tight">New Consultation</h2>
-            <p class="text-[#617789] dark:text-[#94a3b8] text-sm mt-0.5">Answer a few questions — a pharmacist will review your case.</p>
+            <p class="text-[#617789] dark:text-[#94a3b8] text-sm mt-0.5">
+                Chat with our AI assistant — a pharmacist will review your case.
+            </p>
         </div>
         <a asp-controller="Patient" asp-action="Dashboard" class="text-[#617789] hover:text-primary">
             <span class="material-symbols-outlined">close</span>
         </a>
     </div>
 
-    <!-- Progress Bar -->
-    <div class="mb-4 shrink-0">
-        <div class="flex justify-between text-xs text-[#617789] mb-1">
-            <span>Step <span id="currentStepLabel">1</span> of @ViewBag.TotalSteps</span>
-            <span id="progressPercent">0%</span>
+    <!-- AI Status Bar -->
+    <div class="mb-4 shrink-0 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span class="text-xs text-[#617789] font-medium">AI Assistant Active</span>
         </div>
-        <div class="w-full bg-[#e5e7eb] dark:bg-[#2d3a4b] rounded-full h-1.5">
-            <div id="progressBar" class="bg-primary h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        <div id="typingIndicator" class="hidden text-xs text-[#617789] italic flex items-center gap-1">
+            <span>Thinking</span>
+            <span class="flex gap-0.5">
+                <span class="w-1 h-1 bg-[#617789] rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                <span class="w-1 h-1 bg-[#617789] rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                <span class="w-1 h-1 bg-[#617789] rounded-full animate-bounce" style="animation-delay:300ms"></span>
+            </span>
         </div>
     </div>
 
@@ -32,177 +39,285 @@
          class="flex-1 overflow-y-auto bg-white dark:bg-[#1a2632] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-4 space-y-4 mb-4">
     </div>
 
-    <!-- Input Area -->
+    <!-- Text Input -->
     <div id="inputArea" class="shrink-0">
-        <!-- Text input (shown for text steps) -->
-        <div id="textInput" class="hidden flex gap-3">
+        <div id="textInput" class="flex gap-3">
             <input id="userTextInput" type="text"
-                   placeholder="Type your answer..."
+                   placeholder="Type your message..."
                    class="flex-1 rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                   onkeydown="if(event.key==='Enter') submitTextAnswer()" />
-            <button onclick="submitTextAnswer()"
-                class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-xl transition-all">
+                   onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }" />
+            <button id="sendBtn" onclick="sendMessage()"
+                    class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <span class="material-symbols-outlined">send</span>
             </button>
         </div>
-
-        <!-- Button options (shown for button steps) -->
-        <div id="buttonInput" class="hidden flex flex-wrap gap-2 justify-center"></div>
+        <p class="text-[10px] text-[#617789] mt-2 text-center">
+            This AI assistant helps gather your symptoms. A licensed pharmacist will review and respond.
+        </p>
     </div>
 
-    <!-- Hidden submit form -->
-    <form id="submitForm" asp-action="SubmitChat" method="post" class="hidden">
-        @Html.AntiForgeryToken()
-        <input type="hidden" id="answersJson" name="AnswersJson" />
-    </form>
+    <!-- Action area shown at summary step -->
+    <div id="actionArea" class="hidden shrink-0 space-y-3 mt-2"></div>
+
+    <!-- CSRF token -->
+    @Html.AntiForgeryToken()
 </div>
 
 @section Scripts {
 <script>
-    const totalSteps = @ViewBag.TotalSteps;
-    const patientName = '@ViewBag.PatientName';
-    const answers = []; // { stepNumber, answer }
-    let currentStep = 0;
+    const patientName  = '@ViewBag.PatientName';
+    const photoUrl     = '@ViewBag.PatientPhoto';
+    const csrfToken    = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
-    window.onload = () => {
-        // Bot greeting then first question
-        appendBotMessage(`Hi ${patientName}! 👋 I'm going to ask you a few questions to help the pharmacist understand your situation.`);
-        setTimeout(() => askStep(1), 800);
-    };
+    const history      = [];
+    let isWaiting      = false;
+    let currentSummary = null;
 
-    function askStep(stepNumber) {
-        currentStep = stepNumber;
-        updateProgress(stepNumber);
+    // ── Boot ─────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            appendBotMessage(`Hi ${patientName}! 👋 I'm PharmaCare's AI assistant. I'll ask you a few questions about how you're feeling so our pharmacist can help you better. Please describe what's bothering you today.`);
+            showInput();
+        }, 400);
+    });
 
-        // First step is always text
-        if (stepNumber === 1) {
-            showTextInput("e.g. I have a headache, fever, sore throat...");
-            appendBotMessage("What is your main complaint today?");
-            return;
-        }
+    // ── Send message ──────────────────────────────────────────────────
+    async function sendMessage() {
+        if (isWaiting) return;
 
-        // Get next step from server
-        fetch('/Consultation/NextStep', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ currentStep: stepNumber - 1, answer: answers[answers.length - 1]?.answer ?? '' })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.isEmergency) {
-                showEmergency(data.message);
-                return;
-            }
-            if (data.isComplete) {
-                showSummary();
-                return;
-            }
-            appendBotMessage(data.step.question);
-            if (data.step.inputType === 'buttons') {
-                showButtonInput(data.step.options);
-            } else {
-                showTextInput(data.step.placeholder ?? 'Type your answer...');
-            }
-        });
-    }
+        const input   = document.getElementById('userTextInput');
+        const message = input.value.trim();
+        if (!message) return;
 
-    function submitTextAnswer() {
-        const input = document.getElementById('userTextInput');
-        const answer = input.value.trim();
-        if (!answer) return;
         input.value = '';
-        handleAnswer(answer);
-    }
+        appendUserMessage(message);
+        setWaiting(true);
 
-    function handleAnswer(answer) {
-        appendUserMessage(answer);
-        answers.push({ stepNumber: currentStep, answer });
-        hideInputs();
+        try {
+            const response = await fetch('/Consultation/ChatMessage', {
+                method:  'POST',
+                headers: {
+                    'Content-Type':            'application/json',
+                    'RequestVerificationToken': csrfToken
+                },
+                body: JSON.stringify({ message, history })
+            });
 
-        // Check emergency on any text answer
-        fetch('/Consultation/NextStep', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ currentStep: currentStep, answer: answer })
-        })
-        .then(r => r.json())
-        .then(data => {
+            const data = await response.json();
+
+            history.push({ role: 'user',      content: message       });
+            history.push({ role: 'assistant', content: data.reply ?? '' });
+
             if (data.isEmergency) {
-                showEmergency(data.message);
+                showEmergency(data.reply);
                 return;
             }
-            if (data.isComplete) {
-                setTimeout(showSummary, 400);
+
+            if (data.isComplete && data.summary) {
+                currentSummary = data.summary;
+                showSummary(data.summary);
                 return;
             }
-            setTimeout(() => {
-                appendBotMessage(data.step.question);
-                currentStep = data.step.stepNumber;
-                updateProgress(currentStep);
-                if (data.step.inputType === 'buttons') {
-                    showButtonInput(data.step.options);
-                } else {
-                    showTextInput(data.step.placeholder ?? 'Type your answer...');
-                }
-            }, 500);
-        });
+
+            appendBotMessage(data.reply ?? 'Could you tell me more?');
+
+        } catch (err) {
+            console.error(err);
+            appendBotMessage("I'm having trouble connecting. Please try again.");
+        } finally {
+            setWaiting(false);
+        }
     }
 
-    function showSummary() {
-        hideInputs();
+    // ── Summary ───────────────────────────────────────────────────────
+    function showSummary(summary) {
+        hideInput();
         appendBotMessage("Thank you! Here's a summary of what you've shared:");
 
-        // Build summary in chat
-        const summaryLines = answers.map(a => `<strong>Q:</strong> ${getQuestionForStep(a.stepNumber)}<br><strong>A:</strong> ${a.answer}`).join('<br><br>');
-        appendBotMessageHtml(`<div class="space-y-2 text-sm">${summaryLines}</div>`);
+        const severityColor = {
+            'Severe':   'text-red-600 bg-red-50 dark:bg-red-900/20',
+            'Moderate': 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
+            'Mild':     'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'
+        }[summary.severity] ?? 'text-slate-600 bg-slate-50';
+
+        const summaryHtml = `
+            <div class="space-y-3 text-sm">
+                <div>
+                    <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Main Complaint</p>
+                    <p class="font-medium">${escapeHtml(summary.symptoms)}</p>
+                </div>
+                ${summary.duration ? `
+                <div>
+                    <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Duration</p>
+                    <p>${escapeHtml(summary.duration)}</p>
+                </div>` : ''}
+                <div>
+                    <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Severity</p>
+                    <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold ${severityColor}">${escapeHtml(summary.severity)}</span>
+                </div>
+                ${summary.additionalInfo ? `
+                <div>
+                    <p class="text-xs font-bold text-[#617789] uppercase tracking-wider mb-1">Additional Info</p>
+                    <p class="text-[#617789]">${escapeHtml(summary.additionalInfo)}</p>
+                </div>` : ''}
+            </div>
+        `;
 
         setTimeout(() => {
-            appendBotMessage("Does everything look correct? If yes, I'll send this to a pharmacist for review.");
+            appendBotMessageHtml(summaryHtml);
+            setTimeout(() => {
+                appendBotMessage("Would you like to attach any supporting documents before submitting? This is optional but helps the pharmacist.");
+                showActionArea();
+            }, 600);
+        }, 400);
+    }
 
-            // Show confirm/restart buttons
-            const area = document.getElementById('buttonInput');
-            area.innerHTML = `
-                <button onclick="confirmSubmit()" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2">
+    // ── Action area (upload + submit buttons) ─────────────────────────
+    function showActionArea() {
+        const area = document.getElementById('actionArea');
+        area.classList.remove('hidden');
+        area.innerHTML = `
+            <!-- Optional file upload -->
+            <div class="bg-slate-50 dark:bg-[#0f1923] rounded-xl border border-[#e5e7eb] dark:border-[#2d3a4b] p-4 space-y-3">
+                <p class="text-xs font-bold text-[#617789] uppercase tracking-wider flex items-center gap-1">
+                    <span class="material-symbols-outlined text-base">attach_file</span>
+                    Supporting Documents
+                    <span class="font-normal normal-case ml-1">(optional)</span>
+                </p>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Type</label>
+                        <select id="fileTypeSelect"
+                                class="w-full rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b] bg-white dark:bg-[#1a2632] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="Prescription">Prescription</option>
+                            <option value="Lab Result">Lab Result</option>
+                            <option value="Photo">Photo (skin, wound, etc.)</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">File</label>
+                        <input type="file" id="attachmentInput"
+                               accept="image/jpeg,image/png,image/webp,application/pdf,.doc,.docx"
+                               onchange="showFilePreview(this)"
+                               class="w-full text-xs text-[#617789] file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+                    </div>
+                </div>
+
+                <!-- File preview -->
+                <div id="filePreview" class="hidden items-center gap-2 p-2 bg-white dark:bg-[#1a2632] rounded-lg border border-[#e5e7eb] dark:border-[#2d3a4b]">
+                    <span class="material-symbols-outlined text-primary text-lg" id="filePreviewIcon">attach_file</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold truncate" id="filePreviewName"></p>
+                        <p class="text-[10px] text-[#617789]" id="filePreviewSize"></p>
+                    </div>
+                    <button type="button" onclick="clearFile()" class="text-red-400 hover:text-red-600 transition-colors">
+                        <span class="material-symbols-outlined text-base">close</span>
+                    </button>
+                </div>
+
+                <p class="text-[10px] text-[#617789]">JPG, PNG, PDF, DOCX — max 10MB</p>
+            </div>
+
+            <!-- Submit / Start Over -->
+            <div class="flex gap-3">
+                <button id="submitBtn" onclick="confirmSubmit()"
+                        class="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
                     <span class="material-symbols-outlined text-base">send</span>
                     Submit to Pharmacist
                 </button>
-                <button onclick="restartChat()" class="border border-[#e5e7eb] dark:border-[#2d3a4b] font-semibold py-3 px-5 rounded-xl hover:bg-[#f9fafb] dark:hover:bg-[#2d3a4b] transition-all text-sm">
+                <button onclick="restartChat()"
+                        class="border border-[#e5e7eb] dark:border-[#2d3a4b] font-semibold py-3 px-5 rounded-xl hover:bg-[#f9fafb] dark:hover:bg-[#2d3a4b] transition-all text-sm">
                     Start Over
                 </button>
-            `;
-            area.classList.remove('hidden');
-            area.classList.add('flex');
-        }, 600);
+            </div>
+        `;
     }
 
-    function confirmSubmit() {
-        const payload = JSON.stringify(answers);
-        document.getElementById('answersJson').value = payload;
-        console.log('[Consultation] submitting answersJson:', payload);
-        document.getElementById('submitForm').submit();
+    function showFilePreview(input) {
+        const file    = input.files[0];
+        const preview = document.getElementById('filePreview');
+        if (!file) { preview.classList.add('hidden'); preview.classList.remove('flex'); return; }
+
+        const icon = file.type === 'application/pdf' ? 'picture_as_pdf'
+            : file.type.startsWith('image/')   ? 'image'
+                : 'description';
+
+        document.getElementById('filePreviewIcon').textContent = icon;
+        document.getElementById('filePreviewName').textContent = file.name;
+        document.getElementById('filePreviewSize').textContent = (file.size / 1024).toFixed(0) + ' KB';
+        preview.classList.remove('hidden');
+        preview.classList.add('flex');
+    }
+
+    function clearFile() {
+        document.getElementById('attachmentInput').value = '';
+        const preview = document.getElementById('filePreview');
+        preview.classList.add('hidden');
+        preview.classList.remove('flex');
+    }
+
+    // ── Submit via FormData (supports file upload) ────────────────────
+    async function confirmSubmit() {
+        if (!currentSummary) return;
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Submitting...`;
+
+        const formData = new FormData();
+        formData.append('Symptoms',       currentSummary.symptoms       ?? '');
+        formData.append('Duration',       currentSummary.duration       ?? '');
+        formData.append('Severity',       currentSummary.severity       ?? 'Moderate');
+        formData.append('AdditionalInfo', currentSummary.additionalInfo ?? '');
+        formData.append('Transcript',     currentSummary.transcript     ?? '');
+        formData.append('IsGroqSummary',  'true');
+        formData.append('__RequestVerificationToken', csrfToken);
+
+        // Attach file if selected
+        const fileInput = document.getElementById('attachmentInput');
+        if (fileInput?.files?.length > 0) {
+            formData.append('file',     fileInput.files[0]);
+            formData.append('fileType', document.getElementById('fileTypeSelect').value);
+        }
+
+        try {
+            const response = await fetch('/Consultation/SubmitChat', {
+                method: 'POST',
+                body:   formData
+                // No Content-Type header — browser sets multipart boundary automatically
+            });
+
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                window.location.href = response.url || '/';
+            } else {
+                appendBotMessage("Something went wrong. Please try again.");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span class="material-symbols-outlined text-base">send</span> Submit to Pharmacist`;
+            }
+        } catch (err) {
+            console.error(err);
+            appendBotMessage("Submission failed. Please check your connection and try again.");
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span class="material-symbols-outlined text-base">send</span> Submit to Pharmacist`;
+        }
     }
 
     function restartChat() {
-        answers.length = 0;
-        currentStep = 0;
+        history.length = 0;
+        currentSummary = null;
         document.getElementById('chatWindow').innerHTML = '';
-        window.onload();
+        document.getElementById('actionArea').classList.add('hidden');
+        document.getElementById('actionArea').innerHTML = '';
+        window.dispatchEvent(new Event('DOMContentLoaded'));
     }
 
-    function getQuestionForStep(step) {
-        const questions = {
-            1: "Main complaint",
-            2: "Duration",
-            3: "Severity",
-            4: "Better or worse",
-            5: "Current medications",
-            6: "Additional info"
-        };
-        return questions[step] ?? `Step ${step}`;
-    }
-
+    // ── Emergency ─────────────────────────────────────────────────────
     function showEmergency(message) {
-        hideInputs();
+        hideInput();
         const chatWindow = document.getElementById('chatWindow');
         const div = document.createElement('div');
         div.className = 'bg-red-50 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-xl p-4';
@@ -211,7 +326,11 @@
                 <span class="material-symbols-outlined text-red-500 text-2xl">emergency</span>
                 <div>
                     <p class="font-bold text-red-700 dark:text-red-400 mb-1">Emergency Detected</p>
-                    <p class="text-sm text-red-600 dark:text-red-300">${message}</p>
+                    <p class="text-sm text-red-600 dark:text-red-300">${escapeHtml(message)}</p>
+                    <a href="tel:140" class="inline-flex items-center gap-1 mt-3 bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        <span class="material-symbols-outlined text-base">call</span>
+                        Call 140 Now
+                    </a>
                 </div>
             </div>
         `;
@@ -219,35 +338,24 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // ── UI Helpers ──────────────────────────────────────
+    // ── UI Helpers ────────────────────────────────────────────────────
+    function setWaiting(waiting) {
+        isWaiting = waiting;
+        document.getElementById('sendBtn').disabled       = waiting;
+        document.getElementById('userTextInput').disabled = waiting;
+        document.getElementById('typingIndicator').classList.toggle('hidden', !waiting);
+        document.getElementById('typingIndicator').classList.toggle('flex',    waiting);
+    }
 
-    function showTextInput(placeholder) {
-        document.getElementById('userTextInput').placeholder = placeholder;
+    function showInput() {
         document.getElementById('textInput').classList.remove('hidden');
         document.getElementById('textInput').classList.add('flex');
-        document.getElementById('buttonInput').classList.add('hidden');
         setTimeout(() => document.getElementById('userTextInput').focus(), 100);
     }
 
-    function showButtonInput(options) {
-        const area = document.getElementById('buttonInput');
-        area.innerHTML = options.map(opt =>
-            `<button onclick="handleAnswer('${opt}')"
-                class="border border-primary text-primary font-semibold py-2 px-4 rounded-xl hover:bg-primary hover:text-white transition-all text-sm">
-                ${opt}
-            </button>`
-        ).join('');
-        area.classList.remove('hidden');
-        area.classList.add('flex');
+    function hideInput() {
         document.getElementById('textInput').classList.add('hidden');
         document.getElementById('textInput').classList.remove('flex');
-    }
-
-    function hideInputs() {
-        document.getElementById('textInput').classList.add('hidden');
-        document.getElementById('textInput').classList.remove('flex');
-        document.getElementById('buttonInput').classList.add('hidden');
-        document.getElementById('buttonInput').classList.remove('flex');
     }
 
     function appendBotMessage(text) {
@@ -283,30 +391,25 @@
         const div = document.createElement('div');
         div.className = 'flex justify-end gap-2 items-end';
 
-        const photoUrl = '@ViewBag.PatientPhoto';
-        const name     = '@ViewBag.PatientName';
-
         const avatar = photoUrl
-            ? `<img src="${photoUrl}" class="w-8 h-8 rounded-full object-cover shrink-0" alt="${name}" />`
-            : `<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shrink-0 text-sm font-bold">${name?.charAt(0)?.toUpperCase() ?? 'U'}</div>`;
+            ? `<img src="${photoUrl}" class="w-8 h-8 rounded-full object-cover shrink-0" alt="${patientName}" />`
+            : `<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shrink-0 text-sm font-bold">${patientName?.charAt(0)?.toUpperCase() ?? 'U'}</div>`;
 
         div.innerHTML = `
-        <div class="max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-none px-4 py-3 text-sm leading-relaxed">${escapeHtml(text)}</div>
-        ${avatar}
-    `;
+            <div class="max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-none px-4 py-3 text-sm leading-relaxed">${escapeHtml(text)}</div>
+            ${avatar}
+        `;
         chatWindow.appendChild(div);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    function updateProgress(step) {
-        const pct = Math.round(((step - 1) / totalSteps) * 100);
-        document.getElementById('progressBar').style.width = pct + '%';
-        document.getElementById('progressPercent').textContent = pct + '%';
-        document.getElementById('currentStepLabel').textContent = step;
-    }
-
     function escapeHtml(text) {
-        return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
     }
 </script>
 }

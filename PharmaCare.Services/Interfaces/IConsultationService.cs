@@ -1,4 +1,5 @@
-﻿using PharmaCare.Data.Models;
+﻿using Microsoft.AspNetCore.Http;
+using PharmaCare.Data.Models;
 
 namespace PharmaCare.Services.Interfaces
 {
@@ -33,5 +34,20 @@ namespace PharmaCare.Services.Interfaces
         Task<bool> DispatchOrderAsync(int orderId, string pharmacistNotes);
         Task<MedicationOrder?> GetOrderByConsultationIdAsync(int consultationId);
         Task<IEnumerable<MedicationOrder>> GetPendingOrdersAsync();
+        Task<ConsultationAttachment?> SaveAttachmentAsync(
+            int consultationId,
+            string uploadedByUserId,
+            IFormFile file,
+            string fileType,
+            string appDataPath);
+
+        Task<IEnumerable<ConsultationAttachment>> GetAttachmentsAsync(int consultationId);
+        Task<ConsultationAttachment?> GetAttachmentByIdAsync(int attachmentId);
+        Task<bool> DeleteAttachmentAsync(int attachmentId, string requestingUserId, string appDataPath);
+        Task RequestAttachmentAsync(int consultationId, string pharmacistUserId, string requestNote);
+        Task<bool> FulfillAttachmentRequestAsync(int attachmentId);
+        Task SendMessageAsync(int consultationId, string senderUserId, string senderRole, string message);
+        Task<IEnumerable<ConsultationMessage>> GetMessagesAsync(int consultationId);
+        Task MarkMessagesAsReadAsync(int consultationId, string readerUserId);
     }
 }

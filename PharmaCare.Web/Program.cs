@@ -72,7 +72,7 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IAIAssessmentService, AIAssessmentService>();
 builder.Services.AddScoped<ConsultationChatService>();
 builder.Services.AddScoped<IMedicationService, MedicationService>();
-
+builder.Services.AddScoped<IGroqChatService, GroqChatService>();
 builder.Services.AddHttpClient("AIService", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5001/");
@@ -82,7 +82,12 @@ builder.Services.AddHttpClient("AIService", client =>
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 
-
+builder.Services.AddHttpClient("GroqClient", client =>
+{
+    client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+    client.DefaultRequestHeaders.Add("Authorization", 
+        $"Bearer {builder.Configuration["Groq:ApiKey"]}");
+});
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

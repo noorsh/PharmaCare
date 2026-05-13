@@ -1,1 +1,231 @@
-﻿
+﻿@{
+    ViewData["Title"] = "Privacy Policy";
+    Layout = "_LandingLayout";
+}
+
+<header class="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 lg:px-10 flex h-16 items-center justify-between">
+        <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings:'FILL' 1;">health_metrics</span>
+            <span class="text-xl font-black tracking-tight text-[#111518]" style="font-family:'Manrope',sans-serif;">PharmaCare</span>
+        </a>
+        <a asp-controller="Home" asp-action="Index"
+           class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            Back to Home
+        </a>
+    </div>
+</header>
+
+<main class="bg-background-light min-h-screen py-16">
+    <div class="max-w-3xl mx-auto px-6 lg:px-0">
+
+        @* Page header *@
+        <div class="mb-12">
+            <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">lock</span>
+                Legal
+            </div>
+            <h1 class="text-4xl font-black text-[#111518] mb-4" style="font-family:'Manrope',sans-serif;">Privacy Policy</h1>
+            <p class="text-gray-500 text-sm">Last updated: January 1, 2025 &nbsp;&middot;&nbsp; Effective date: January 1, 2025</p>
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3">
+                <span class="material-symbols-outlined text-yellow-600 text-xl mt-0.5 shrink-0">info</span>
+                <p class="text-sm text-yellow-800 leading-relaxed">
+                    PharmaCare is an academic project developed for educational purposes. This privacy policy reflects our genuine data handling practices within the scope of this project.
+                </p>
+            </div>
+        </div>
+
+        @* Content *@
+        <div class="space-y-10 text-gray-700 leading-relaxed">
+
+            @* 1 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">1</span>
+                    Who We Are
+                </h2>
+                <p>
+                    PharmaCare ("we", "our", or "us") is an AI-assisted pharmacy consultation platform built for Lebanon's healthcare sector. The platform connects patients with licensed pharmacists for remote medication guidance.
+                </p>
+                <p class="mt-3">
+                    For any privacy-related questions, contact us at: <a href="mailto:privacy@pharmacare.lb" class="text-primary underline">privacy@pharmacare.lb</a>
+                </p>
+            </section>
+
+            @* 2 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">2</span>
+                    What Data We Collect
+                </h2>
+                <p class="mb-4">When you use PharmaCare, we collect the following categories of information:</p>
+
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-primary text-lg mt-0.5 shrink-0">person</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">Account Information</p>
+                            <p class="text-sm text-gray-600">Full name, email address, password (stored as a secure hash — never in plain text), and account role (Patient, Pharmacist, Admin).</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-primary text-lg mt-0.5 shrink-0">medical_information</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">Health Information</p>
+                            <p class="text-sm text-gray-600">Symptoms you describe, allergies, current medications, chronic conditions, and any other health details you voluntarily provide during a consultation.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-primary text-lg mt-0.5 shrink-0">chat</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">Consultation Content</p>
+                            <p class="text-sm text-gray-600">The full text of your consultations, AI assessments, and pharmacist recommendations.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-primary text-lg mt-0.5 shrink-0">devices</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">Technical Data</p>
+                            <p class="text-sm text-gray-600">Browser type, IP address, and access timestamps, collected automatically by our web server for security and performance purposes.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            @* 3 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">3</span>
+                    How We Use Your Data
+                </h2>
+                <p class="mb-4">We use your information strictly to operate the PharmaCare service:</p>
+                <ul class="space-y-2 ml-4">
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-green-500 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span> To create and manage your account</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-green-500 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span> To process your consultation and route it to an available pharmacist</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-green-500 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span> To generate AI-assisted symptom assessments</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-green-500 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span> To display your consultation history to you</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-green-500 text-base mt-0.5" style="font-variation-settings:'FILL' 1;">check_circle</span> To maintain the security and integrity of the platform</li>
+                </ul>
+            </section>
+
+            @* 4 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">4</span>
+                    How We Protect Your Data
+                </h2>
+                <p class="mb-4">We take security seriously and have implemented the following measures:</p>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-green-600 text-lg mt-0.5 shrink-0" style="font-variation-settings:'FILL' 1;">https</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">HTTPS Encryption in Transit</p>
+                            <p class="text-sm text-gray-600">All communication between your browser and our servers uses TLS (HTTPS), preventing interception of your data over the network.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-green-600 text-lg mt-0.5 shrink-0" style="font-variation-settings:'FILL' 1;">key</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">Hashed Passwords</p>
+                            <p class="text-sm text-gray-600">Passwords are never stored in plain text. We use ASP.NET Identity's built-in hashing (PBKDF2) so that even our team cannot read your password.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                        <span class="material-symbols-outlined text-green-600 text-lg mt-0.5 shrink-0" style="font-variation-settings:'FILL' 1;">admin_panel_settings</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#111518] mb-1">Role-Based Access Control</p>
+                            <p class="text-sm text-gray-600">Only authenticated users with the correct role (Patient, Pharmacist, Admin) can access their respective data. Patients cannot see other patients' consultations.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            @* 5 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">5</span>
+                    Who Can Access Your Data
+                </h2>
+                <p class="mb-4">Access to your personal and health data is strictly limited:</p>
+                <ul class="space-y-2 ml-4">
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> <strong>You</strong> — you can view and delete your own account and consultation history at any time.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> <strong>Assigned pharmacist</strong> — only the pharmacist assigned to your consultation can view its contents, for the purpose of providing a recommendation.</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> <strong>Platform administrators</strong> — admins can access account-level data for user management purposes only, not consultation content.</li>
+                </ul>
+                <div class="mt-5 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
+                    <span class="material-symbols-outlined text-red-500 text-xl mt-0.5 shrink-0">block</span>
+                    <p class="text-sm text-red-800">
+                        <strong>We do not sell, rent, or share your personal or health data with any third party</strong>, including advertisers, data brokers, or analytics companies.
+                    </p>
+                </div>
+            </section>
+
+            @* 6 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">6</span>
+                    Data Retention
+                </h2>
+                <p>
+                    Your account data and consultation history are retained for as long as your account is active. If you request account deletion, your personal data and consultation records will be permanently removed from our database.
+                </p>
+                <p class="mt-3">
+                    To request deletion of your account and data, contact us at <a href="mailto:privacy@pharmacare.lb" class="text-primary underline">privacy@pharmacare.lb</a>.
+                </p>
+            </section>
+
+            @* 7 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">7</span>
+                    Your Rights
+                </h2>
+                <p class="mb-4">You have the right to:</p>
+                <ul class="space-y-2 ml-4">
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> Access the personal data we hold about you</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> Correct inaccurate information in your profile</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> Request deletion of your account and associated data</li>
+                    <li class="flex items-start gap-2 text-sm"><span class="material-symbols-outlined text-primary text-base mt-0.5">arrow_right</span> Withdraw consent at any time by deactivating your account</li>
+                </ul>
+            </section>
+
+            @* 8 *@
+            <section>
+                <h2 class="text-xl font-black text-[#111518] mb-4 flex items-center gap-2" style="font-family:'Manrope',sans-serif;">
+                    <span class="w-7 h-7 bg-primary text-white rounded-full text-xs font-black flex items-center justify-center shrink-0">8</span>
+                    Changes to This Policy
+                </h2>
+                <p>
+                    We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date at the top of this page. Continued use of PharmaCare after any changes constitutes your acceptance of the updated policy.
+                </p>
+            </section>
+
+        </div>
+
+        @* Footer nav *@
+        <div class="mt-16 pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-base">arrow_back</span> Back to Home
+            </a>
+            <a asp-controller="Home" asp-action="Terms" class="text-sm text-primary font-semibold hover:underline">
+                View Terms of Service →
+            </a>
+        </div>
+
+    </div>
+</main>
+
+<footer class="bg-white border-t border-gray-100 py-8">
+    <div class="max-w-7xl mx-auto px-6 lg:px-10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">health_metrics</span>
+            <span class="font-black text-gray-900" style="font-family:'Manrope',sans-serif;">PharmaCare</span>
+            <span class="text-gray-400 text-sm ml-3">&#169; 2025 PharmaCare Lebanon. All rights reserved.</span>
+        </div>
+        <div class="flex gap-8">
+            <a asp-controller="Home" asp-action="Privacy" class="text-sm text-primary font-semibold">Privacy Policy</a>
+            <a asp-controller="Home" asp-action="Terms" class="text-sm text-gray-500 hover:text-primary transition-colors">Terms of Service</a>
+        </div>
+    </div>
+</footer>
